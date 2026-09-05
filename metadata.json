@@ -1,0 +1,6 @@
+{
+  "name": "Bíblia Sagrada ACF 2011",
+  "description": "Aplicativo web completo em arquivo único para leitura, estudo e busca da Bíblia Sagrada na tradução Almeida Corrigida Fiel (ACF 2011).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

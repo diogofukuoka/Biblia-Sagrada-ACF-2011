@@ -1,0 +1,23 @@
+{
+  "projectInfo": {
+    "name": "Bible Comments App"
+  },
+  "schema": {
+    "collections": {
+      "comments": {
+        "description": "Stores user comments on bible verses",
+        "documentId": "Comment Document ID (e.g., book_chapter_verse)",
+        "fields": {
+          "text": "string",
+          "updatedAt": "timestamp"
+        },
+        "securityRules": {
+          "read": "true",
+          "create": "request.auth != null && request.auth.token.email == 'diogofukuoka85@gmail.com'",
+          "update": "request.auth != null && request.auth.token.email == 'diogofukuoka85@gmail.com'",
+          "delete": "request.auth != null && request.auth.token.email == 'diogofukuoka85@gmail.com'"
+        }
+      }
+    }
+  }
+}
