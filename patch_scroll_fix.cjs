@@ -1,39 +1,23 @@
 const fs = require('fs');
 let code = fs.readFileSync('index.html', 'utf8');
 
-const targetJs = `                // Vamos calcular a posição exata e rolar o container apropriado (window ou main)
-                const headerOffset = 64 + 16; // 64px header height + 16px padding
-                const elementPosition = targetVEl.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                
-                window.scrollTo({
-                     top: offsetPosition,
-                     behavior: "smooth"
-                });`;
+const targetScrollDef = `      function safeScrollTo(targetEl, smooth = false) {
+        if (!targetEl) return;
+        const container = document.querySelector('main.reader-container');`;
+const replaceScrollDef = `      function safeScrollTo(targetEl, smooth = false, containerSelector = 'main.reader-container') {
+        if (!targetEl) return;
+        const container = document.querySelector(containerSelector);`;
 
-const replaceJs = `                // O container com overflow-y: auto é o main.reader-container e não a window
-                const readerContainer = document.getElementById('bible-reader');
-                if (readerContainer) {
-                   const headerOffset = 64; // 64px header height 
-                   // Pega a posição relativa ao container scrollável
-                   const containerRect = readerContainer.getBoundingClientRect();
-                   const elementRect = targetVEl.getBoundingClientRect();
-                   
-                   // Calcula o quanto precisamos rolar: scroll atual + posição do elemento na tela - topo do container - offset do header
-                   const scrollPos = readerContainer.scrollTop + elementRect.top - containerRect.top - 20; 
-                   
-                   readerContainer.scrollTo({
-                        top: scrollPos,
-                        behavior: "smooth"
-                   });
-                } else {
-                   targetVEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }`;
+code = code.replace(targetScrollDef, replaceScrollDef);
 
-if (code.includes(targetJs)) {
-    code = code.replace(targetJs, replaceJs);
-    fs.writeFileSync('index.html', code);
-    console.log("Success");
-} else {
-    console.log("Target not found");
-}
+const targetSidebarCall = `            if (target) {
+              safeScrollTo(target, false);
+              const ed = target.querySelector('.mobile-feed-editor');`;
+const replaceSidebarCall = `            if (target) {
+              safeScrollTo(target, true, '#mobile-notes-feed');
+              const ed = target.querySelector('.mobile-feed-editor');`;
+
+code = code.replace(targetSidebarCall, replaceSidebarCall);
+
+fs.writeFileSync('index.html', code);
+console.log("Success scroll fix");

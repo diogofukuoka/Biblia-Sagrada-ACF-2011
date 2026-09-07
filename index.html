@@ -2618,18 +2618,18 @@
       // ------------------------------------------------------------------------
       // FUNÇÃO SEGURA DE ROLAGEM
       // ------------------------------------------------------------------------
-      function safeScrollTo(targetEl, smooth = false) {
+      function safeScrollTo(targetEl, smooth = false, containerSelector = 'main.reader-container', offsetAdjust = 24) {
         if (!targetEl) return;
-        const container = document.querySelector('main.reader-container');
+        const container = document.querySelector(containerSelector);
         if (!container) {
-           targetEl.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+           targetEl.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
            return;
         }
         const cRect = container.getBoundingClientRect();
         const tRect = targetEl.getBoundingClientRect();
         const offset = tRect.top - cRect.top + container.scrollTop;
         container.scrollTo({
-          top: Math.max(0, offset - 24),
+          top: Math.max(0, offset - offsetAdjust),
           behavior: smooth ? "smooth" : "auto"
         });
       }
@@ -3143,11 +3143,14 @@
               signIn().catch(e => {
                  console.error("Firebase Login Error:", e);
                  if (e.code === 'auth/unauthorized-domain') {
-                   alert("Domínio não autorizado!\nAdicione '" + window.location.hostname + "' na aba 'Domínios autorizados' do Firebase Console (Authentication > Configurações).");
+                   showToast("Erro: Domínio não autorizado.");
+                   window.prompt("DOMÍNIO NÃO AUTORIZADO NO FIREBASE! Copie o link abaixo e adicione na aba 'Domínios autorizados' do Firebase Console (Authentication > Settings):", window.location.hostname);
                  } else if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-                   alert("O popup foi bloqueado ou fechado.\nTente clicar no ícone de abrir em 'Nova Guia' (canto superior direito) e faça o login lá.");
+                   showToast("Abra em Nova Guia para fazer o login.");
+                   alert("O navegador bloqueou o pop-up de login.\n\nPara fazer login, você PRECISA clicar no botão 'Abrir em Nova Guia' (ícone de quadrado com setinha) no canto superior direito da tela do AI Studio e fazer o login na nova janela.");
                  } else {
                    showToast("Erro: " + (e.message || e.code));
+                   alert("Erro ao fazer login:\n" + e.message);
                  }
               });
             }
@@ -3334,9 +3337,19 @@
           if (mobileFeed) {
             const target = document.getElementById(`mobile-feed-item-${chapter}-${verse}`);
             if (target) {
-              safeScrollTo(target, false);
+              const container = document.getElementById("mobile-notes-feed");
+              if (container) {
+                // Ensure container layout is fully flushed
+                container.scrollTop = container.scrollTop;
+                const cRect = container.getBoundingClientRect();
+                const tRect = target.getBoundingClientRect();
+                const offset = tRect.top - cRect.top + container.scrollTop;
+                container.scrollTo({ top: Math.max(0, offset - 20), behavior: 'auto' });
+              }
               const ed = target.querySelector('.mobile-feed-editor');
-              if (ed) ed.focus({preventScroll: true});
+              if (ed && ed.getAttribute("contenteditable") === "true") {
+                ed.focus({preventScroll: true});
+              }
             }
           }
         }, 350);

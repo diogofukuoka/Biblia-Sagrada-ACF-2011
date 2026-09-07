@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, getDocs, onSnapshot } from 'firebase/firestore';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getAuth, signInWithPopup, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from 'firebase/auth';
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0930791125",
@@ -18,7 +18,16 @@ const auth = getAuth(app);
 window.firebaseApp = {
     db,
     auth,
-    signIn: () => signInWithPopup(auth, new GoogleAuthProvider()),
+    signIn: () => {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        // popup fallback, but often blocked in cross-origin iframes
+        return signInWithPopup(auth, provider);
+    },
+    signInRedirect: () => {
+        const provider = new GoogleAuthProvider();
+        return signInWithRedirect(auth, provider);
+    },
     signOut: () => signOut(auth),
     onAuthStateChanged: (cb) => onAuthStateChanged(auth, cb),
     collection, doc, setDoc, getDoc, deleteDoc, getDocs, onSnapshot
