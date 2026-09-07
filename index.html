@@ -3098,7 +3098,7 @@
       // Firebase Init & Auth
       const initFirebase = () => {
         if (window.firebaseApp) {
-          const { auth, db, onAuthStateChanged, signIn, signOut, collection, onSnapshot } = window.firebaseApp;
+          const { auth, db, onAuthStateChanged, signIn, signInRedirect, signOut, collection, onSnapshot } = window.firebaseApp;
           
           function updateEditorsPermission() {
             document.querySelectorAll(".mobile-feed-editor").forEach(el => {
@@ -3140,6 +3140,14 @@
               showToast("Você saiu");
             } else {
               showToast("Iniciando login...");
+              const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+              if (isMobile && typeof signInRedirect === 'function') {
+                signInRedirect().catch(e => {
+                  console.error("Redirect login error", e);
+                  alert("Erro no login: " + e.message);
+                });
+                return;
+              }
               signIn().catch(e => {
                  console.error("Firebase Login Error:", e);
                  if (e.code === 'auth/unauthorized-domain') {
