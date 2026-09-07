@@ -1571,7 +1571,7 @@
     .notes-content {
       flex: 1;
       padding: 44px 12px 14px;
-      overflow-y: auto;
+      overflow: hidden; /* Prevent nested double scrollbars */
       overscroll-behavior: contain;
       display: flex;
       flex-direction: column;
@@ -3341,26 +3341,42 @@
           vEl.classList.add("active-note-verse");
         }
         
+        // Aumentar o timeout para garantir que as animações de layout (margin/transform) terminem no mobile.
         setTimeout(() => {
           if (mobileFeed) {
             const target = document.getElementById(`mobile-feed-item-${chapter}-${verse}`);
             if (target) {
               const container = document.getElementById("mobile-notes-feed");
               if (container) {
-                // Ensure container layout is fully flushed
-                container.scrollTop = container.scrollTop;
-                const cRect = container.getBoundingClientRect();
-                const tRect = target.getBoundingClientRect();
-                const offset = tRect.top - cRect.top + container.scrollTop;
-                container.scrollTo({ top: Math.max(0, offset - 20), behavior: 'auto' });
+                // Force parent container to not scroll down accidentally
+                const parent = document.querySelector(".notes-content");
+                if (parent) parent.scrollTop = 0;
+                
+                // Disable smooth scroll temporarily
+                const originalBehavior = container.style.scrollBehavior || '';
+                container.style.scrollBehavior = 'auto';
+                
+                // Força layout antes de calcular
+                void container.offsetHeight; 
+                
+                // Use built-in scrollIntoView for perfect alignment
+                target.scrollIntoView({ behavior: 'auto', block: 'start' });
+                
+                // Ajuste fino para não colar no topo (compensa padding superior)
+                container.scrollTop = Math.max(0, container.scrollTop - 20);
+                
+                container.style.scrollBehavior = originalBehavior;
               }
+              
               const ed = target.querySelector('.mobile-feed-editor');
               if (ed && ed.getAttribute("contenteditable") === "true") {
-                ed.focus({preventScroll: true});
+                setTimeout(() => {
+                   ed.focus({preventScroll: true});
+                }, 50);
               }
             }
           }
-        }, 350);
+        }, 400);
       }
 
       function closeNotesSidebar() {
