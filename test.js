@@ -1,33 +1,3178 @@
-const rawContent = `[ Por amor da verdade ] → A Motivação
 
-[ que está em nós ] → A Habitação
+    /**
+     * MOTOR DE DADOS, LEITURA E PERSISTÊNCIA DA BÍBLIA SAGRADA (ACF 2011)
+     * Arquitetura em Vanilla JavaScript ES6+
+     */
+    (function () {
+      "use strict";
 
-[ e para sempre ] → A Duração`;
-const lines = rawContent.split("\n");
+      // ------------------------------------------------------------------------
+      // 1. CANON BÍBLICO (66 LIVROS DA ACF 2011 COM NOMES, ABREVIAÇÕES E CAPÍTULOS)
+      // ------------------------------------------------------------------------
+      const BIBLE_BOOKS = [
+        // Antigo Testamento (39 livros)
+        { id: "gn", name: "Gênesis", testament: "AT", chapters: 50, abbrev: "gn" },
+        { id: "ex", name: "Êxodo", testament: "AT", chapters: 40, abbrev: "ex" },
+        { id: "lv", name: "Levítico", testament: "AT", chapters: 27, abbrev: "lv" },
+        { id: "nm", name: "Números", testament: "AT", chapters: 36, abbrev: "nm" },
+        { id: "dt", name: "Deuteronômio", testament: "AT", chapters: 34, abbrev: "dt" },
+        { id: "js", name: "Josué", testament: "AT", chapters: 24, abbrev: "js" },
+        { id: "jz", name: "Juízes", testament: "AT", chapters: 21, abbrev: "jz" },
+        { id: "rt", name: "Rute", testament: "AT", chapters: 4, abbrev: "rt" },
+        { id: "1sm", name: "1 Samuel", testament: "AT", chapters: 31, abbrev: "1sm" },
+        { id: "2sm", name: "2 Samuel", testament: "AT", chapters: 24, abbrev: "2sm" },
+        { id: "1rs", name: "1 Reis", testament: "AT", chapters: 22, abbrev: "1rs" },
+        { id: "2rs", name: "2 Reis", testament: "AT", chapters: 25, abbrev: "2rs" },
+        { id: "1cr", name: "1 Crônicas", testament: "AT", chapters: 29, abbrev: "1cr" },
+        { id: "2cr", name: "2 Crônicas", testament: "AT", chapters: 36, abbrev: "2cr" },
+        { id: "ed", name: "Esdras", testament: "AT", chapters: 10, abbrev: "ed" },
+        { id: "ne", name: "Neemias", testament: "AT", chapters: 13, abbrev: "ne" },
+        { id: "et", name: "Ester", testament: "AT", chapters: 10, abbrev: "et" },
+        { id: "jo", name: "Jó", testament: "AT", chapters: 42, abbrev: "job" },
+        { id: "sl", name: "Salmos", testament: "AT", chapters: 150, abbrev: "sl" },
+        { id: "pv", name: "Provérbios", testament: "AT", chapters: 31, abbrev: "pv" },
+        { id: "ec", name: "Eclesiastes", testament: "AT", chapters: 12, abbrev: "ec" },
+        { id: "ct", name: "Cânticos", testament: "AT", chapters: 8, abbrev: "ct" },
+        { id: "is", name: "Isaías", testament: "AT", chapters: 66, abbrev: "is" },
+        { id: "jr", name: "Jeremias", testament: "AT", chapters: 52, abbrev: "jr" },
+        { id: "lm", name: "Lamentações", testament: "AT", chapters: 5, abbrev: "lm" },
+        { id: "ez", name: "Ezequiel", testament: "AT", chapters: 48, abbrev: "ez" },
+        { id: "dn", name: "Daniel", testament: "AT", chapters: 12, abbrev: "dn" },
+        { id: "os", name: "Oseias", testament: "AT", chapters: 14, abbrev: "os" },
+        { id: "jl", name: "Joel", testament: "AT", chapters: 3, abbrev: "jl" },
+        { id: "am", name: "Amós", testament: "AT", chapters: 9, abbrev: "am" },
+        { id: "ob", name: "Obadias", testament: "AT", chapters: 1, abbrev: "ob" },
+        { id: "jn", name: "Jonas", testament: "AT", chapters: 4, abbrev: "jn" },
+        { id: "mq", name: "Miqueias", testament: "AT", chapters: 7, abbrev: "mq" },
+        { id: "na", name: "Naum", testament: "AT", chapters: 3, abbrev: "na" },
+        { id: "hc", name: "Habacuque", testament: "AT", chapters: 3, abbrev: "hc" },
+        { id: "sf", name: "Sofonias", testament: "AT", chapters: 3, abbrev: "sf" },
+        { id: "ag", name: "Ageu", testament: "AT", chapters: 2, abbrev: "ag" },
+        { id: "zc", name: "Zacarias", testament: "AT", chapters: 14, abbrev: "zc" },
+        { id: "ml", name: "Malaquias", testament: "AT", chapters: 4, abbrev: "ml" },
 
-let result = [];
-for (let i = 0; i < lines.length; i++) {
-    const l = lines[i].trim();
-    if (!l) {
-        let prevIsPhrasing = false;
-        for (let j = i - 1; j >= 0; j--) {
-        if (lines[j].trim()) {
-            prevIsPhrasing = /^\[\s*(.+?)\s*\]\s*(?:→|->|—>|-->|→)\s*(.+)$/.test(lines[j].trim()) || /an[áa]lise de fraseamento/i.test(lines[j].trim()) || /r[óo]tulos sem[âa]nticos/i.test(lines[j].trim());
-            break;
+        // Novo Testamento (27 livros)
+        { id: "mt", name: "Mateus", testament: "NT", chapters: 28, abbrev: "mt" },
+        { id: "mc", name: "Marcos", testament: "NT", chapters: 16, abbrev: "mc" },
+        { id: "lc", name: "Lucas", testament: "NT", chapters: 24, abbrev: "lc" },
+        { id: "joao", name: "João", testament: "NT", chapters: 21, abbrev: "jo" },
+        { id: "at", name: "Atos", testament: "NT", chapters: 28, abbrev: "at" },
+        { id: "rm", name: "Romanos", testament: "NT", chapters: 16, abbrev: "rm" },
+        { id: "1co", name: "1 Coríntios", testament: "NT", chapters: 16, abbrev: "1co" },
+        { id: "2co", name: "2 Coríntios", testament: "NT", chapters: 13, abbrev: "2co" },
+        { id: "gl", name: "Gálatas", testament: "NT", chapters: 6, abbrev: "gl" },
+        { id: "ef", name: "Efésios", testament: "NT", chapters: 6, abbrev: "ef" },
+        { id: "fp", name: "Filipenses", testament: "NT", chapters: 4, abbrev: "fp" },
+        { id: "cl", name: "Colossenses", testament: "NT", chapters: 4, abbrev: "cl" },
+        { id: "1ts", name: "1 Tessalonicenses", testament: "NT", chapters: 5, abbrev: "1ts" },
+        { id: "2ts", name: "2 Tessalonicenses", testament: "NT", chapters: 3, abbrev: "2ts" },
+        { id: "1tm", name: "1 Timóteo", testament: "NT", chapters: 6, abbrev: "1tm" },
+        { id: "2tm", name: "2 Timóteo", testament: "NT", chapters: 4, abbrev: "2tm" },
+        { id: "tt", name: "Tito", testament: "NT", chapters: 3, abbrev: "tt" },
+        { id: "fm", name: "Filemom", testament: "NT", chapters: 1, abbrev: "fm" },
+        { id: "hb", name: "Hebreus", testament: "NT", chapters: 13, abbrev: "hb" },
+        { id: "tg", name: "Tiago", testament: "NT", chapters: 5, abbrev: "tg" },
+        { id: "1pe", name: "1 Pedro", testament: "NT", chapters: 5, abbrev: "1pe" },
+        { id: "2pe", name: "2 Pedro", testament: "NT", chapters: 3, abbrev: "2pe" },
+        { id: "1jo", name: "1 João", testament: "NT", chapters: 5, abbrev: "1jo" },
+        { id: "2jo", name: "2 João", testament: "NT", chapters: 1, abbrev: "2jo" },
+        { id: "3jo", name: "3 João", testament: "NT", chapters: 1, abbrev: "3jo" },
+        { id: "jd", name: "Judas", testament: "NT", chapters: 1, abbrev: "jd" },
+        { id: "ap", name: "Apocalipse", testament: "NT", chapters: 22, abbrev: "ap" }
+      ];
+
+      // ------------------------------------------------------------------------
+      // 2. TEXTOS NATIVOS INICIAIS DA ACF 2011 (PARA RENDERIZAÇÃO INSTANTÂNEA OFFLINE)
+      // ------------------------------------------------------------------------
+      const PRELOADED_ACF = {
+        "Salmos_23": [
+          "O Senhor é o meu pastor, nada me faltará.",
+          "Deitar-me faz em verdes pastos, guia-me mansamente a águas tranqüilas.",
+          "Refrigera a minha alma; guia-me pelas veredas da justiça, por amor do seu nome.",
+          "Ainda que eu andasse pelo vale da sombra da morte, não temeria mal algum, porque tu estás comigo; a tua vara e o teu cajado me consolam.",
+          "Preparas uma mesa perante mim na presença dos meus inimigos, unges a minha cabeça com óleo, o meu cálice transborda.",
+          "Certamente que a bondade e a misericórdia me seguirão todos os dias da minha vida; e habitarei na casa do Senhor por longos dias."
+        ],
+        "Salmos_91": [
+          "Aquele que habita no esconderijo do Altíssimo, à sombra do Onipotente descansará.",
+          "Direi do Senhor: Ele é o meu Deus, o meu refúgio, a minha fortaleza, e nele confiarei.",
+          "Porque ele te livrará do laço do passarinheiro, e da peste perniciosa.",
+          "Ele te cobrirá com as suas penas, e debaixo das suas asas te confiarás; a sua verdade será o teu escudo e broquel."
+        ],
+        "João_3": [
+          "E havia entre os fariseus um homem, chamado Nicodemos, príncipe dos judeus.",
+          "Este foi ter de noite com Jesus, e disse-lhe: Rabi, bem sabemos que és Mestre, vindo de Deus; porque ninguém pode fazer estes sinais que tu fazes, se Deus não for com ele.",
+          "Jesus respondeu, e disse-lhe: Na verdade, na verdade te digo que aquele que não nascer de novo, não pode ver o reino de Deus.",
+          "Perguntou-lhe Nicodemos: Como pode um homem nascer, sendo velho? Porventura pode tornar a entrar no ventre de sua mãe, e nascer?",
+          "Jesus respondeu: Na verdade, na verdade te digo que aquele que não nascer da água e do Espírito, não pode entrar no reino de Deus.",
+          "O que é nascido da carne é carne, e o que é nascido do Espírito é espírito.",
+          "Não te maravilhes de te ter dito: Necessário vos é nascer de novo.",
+          "O vento assopra onde quer, e ouves a sua voz, mas não sabes de onde vem, nem para onde vai; assim é todo aquele que é nascido do Espírito.",
+          "Nicodemos respondeu, e disse-lhe: Como pode ser isso?",
+          "Jesus respondeu, e disse-lhe: Tu és mestre de Israel, e não sabes isto?",
+          "Na verdade, na verdade te digo que nós dizemos o que sabemos, e testificamos o que vimos; e não aceitais o nosso testemunho.",
+          "Se vos falei de coisas terrestres, e não crestes, como crereis, se vos falar das celestiais?",
+          "Ora, ninguém subiu ao céu, senão o que desceu do céu, o Filho do homem, que está no céu.",
+          "E, como Moisés levantou a serpente no deserto, assim importa que o Filho do homem seja levantado;",
+          "Para que todo aquele que nele crê não pereça, mas tenha a vida eterna.",
+          "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.",
+          "Porque Deus enviou o seu Filho ao mundo, não para que condenasse o mundo, mas para que o mundo fosse salvo por ele."
+        ]
+      };
+
+      // ------------------------------------------------------------------------
+      // 2.1 CONTAGEM EXATA DE VERSÍCULOS POR CAPÍTULO DOS 66 LIVROS (ACF 2011)
+      // ------------------------------------------------------------------------
+      const BIBLE_VERSES_MAP = {
+        gn: [31,25,24,26,32,22,24,22,29,32,32,20,18,24,21,16,27,33,38,18,34,24,20,67,34,35,46,22,35,43,55,32,20,31,29,43,36,30,23,23,57,38,34,34,28,34,31,22,33,26],
+        ex: [22,25,22,31,23,30,25,32,35,29,10,51,22,31,27,36,16,27,25,26,36,31,33,18,40,37,21,43,46,38,18,35,23,35,35,38,29,31,43,38],
+        lv: [17,16,17,35,19,30,38,36,24,20,47,8,59,57,33,34,16,30,37,27,24,33,44,23,55,46,34],
+        nm: [54,34,51,49,31,27,89,26,23,36,35,16,33,45,41,50,13,32,22,29,35,41,30,25,18,65,23,31,40,16,54,42,56,29,34,13],
+        dt: [46,37,29,49,33,25,26,20,29,22,32,32,18,29,23,22,20,22,21,20,23,30,25,22,19,19,26,68,29,20,30,52,29,12],
+        js: [18,24,17,24,15,27,26,35,27,43,23,24,33,15,63,10,18,28,51,9,45,34,16,33],
+        jz: [36,23,31,24,31,40,25,35,57,18,40,15,25,20,20,31,13,31,30,48,25],
+        rt: [22,23,18,22],
+        "1sm": [28,36,21,22,12,21,17,22,27,27,15,25,23,52,35,23,58,30,24,42,15,23,29,22,44,25,12,25,11,31,13],
+        "2sm": [27,32,39,12,25,23,29,18,13,19,27,31,39,33,37,23,29,33,43,26,22,51,39,25],
+        "1rs": [53,46,28,34,18,38,51,66,28,29,43,33,34,31,34,34,24,46,21,43,29,53],
+        "2rs": [18,25,27,44,27,33,20,29,37,36,21,21,25,29,38,20,41,37,37,21,26,20,37,20,30],
+        "1cr": [54,55,24,43,26,81,40,40,44,14,47,40,14,17,29,43,27,17,19,8,30,19,32,31,31,32,34,21,30],
+        "2cr": [17,18,17,22,14,42,22,18,31,19,23,16,22,15,19,14,19,34,11,37,20,12,21,27,28,23,9,27,36,27,21,33,25,33,27,23],
+        ed: [11,70,13,24,17,22,28,36,15,44],
+        ne: [11,20,32,23,19,19,73,18,38,39,36,47,31],
+        et: [22,23,15,17,14,14,10,17,32,3],
+        jo: [22,13,26,21,27,30,21,22,35,22,20,25,28,22,35,22,16,21,29,29,34,30,17,25,6,14,23,28,25,31,40,22,33,37,16,33,24,41,30,24,34,17],
+        sl: [6,12,8,8,12,10,17,9,20,18,7,8,6,7,5,11,15,50,14,9,13,31,6,10,22,12,14,9,11,12,24,11,22,22,28,12,40,22,13,17,13,11,5,26,17,11,9,14,20,23,19,9,6,7,23,13,11,17,17,12,8,12,11,10,13,20,7,35,36,5,24,20,28,23,10,12,20,72,13,19,16,8,18,12,13,17,7,18,52,17,16,15,5,23,11,13,12,9,9,5,8,28,22,35,45,48,43,13,31,7,10,10,9,8,18,19,2,29,176,7,8,9,4,8,5,6,5,6,8,8,3,18,3,3,21,26,9,8,24,13,10,7,12,15,21,10,20,14,9,6],
+        pv: [33,22,35,27,23,35,27,36,18,32,31,28,25,35,33,33,28,24,29,30,31,29,35,34,28,28,27,28,27,33,31],
+        ec: [18,26,22,16,20,12,29,17,18,20,10,14],
+        ct: [17,17,11,16,16,13,13,14],
+        is: [31,22,26,6,30,13,25,22,21,34,16,6,22,32,9,14,14,7,25,6,17,25,18,23,12,21,13,29,24,33,9,20,24,17,10,22,38,22,8,31,29,25,28,28,25,13,15,22,26,11,23,15,12,17,13,12,21,14,21,22,11,12,19,12,25,24],
+        jr: [19,37,25,31,31,30,34,22,26,25,23,17,27,22,21,21,27,23,15,18,14,30,40,10,38,24,22,17,32,24,40,44,26,22,19,32,21,28,18,16,18,22,13,30,5,28,7,47,39,46,64,34],
+        lm: [22,22,66,22,22],
+        ez: [28,10,27,17,17,14,27,18,11,22,25,28,23,23,8,63,24,32,14,49,32,31,49,27,17,21,36,26,21,26,18,32,33,31,15,38,28,23,29,49,26,20,27,31,25,24,23,35],
+        dn: [21,49,30,37,31,28,28,27,27,21,45,13],
+        os: [11,23,5,19,15,11,16,14,17,15,12,14,16,9],
+        jl: [20,32,21],
+        am: [15,16,15,13,27,14,17,14,15],
+        ob: [21],
+        jn: [17,10,10,11],
+        mq: [16,13,12,13,15,16,20],
+        na: [15,13,19],
+        hc: [17,20,19],
+        sf: [18,15,20],
+        ag: [15,23],
+        zc: [21,13,10,14,11,15,14,23,17,12,17,14,9,21],
+        ml: [14,17,18,6],
+        mt: [25,23,17,25,48,34,29,34,38,42,30,50,58,36,39,28,27,35,30,34,46,46,39,51,46,75,66,20],
+        mc: [45,28,35,41,43,56,37,38,50,52,33,44,37,72,47,20],
+        lc: [80,52,38,44,39,49,50,56,62,42,54,59,35,35,32,31,37,43,48,47,38,71,56,53],
+        joao: [51,25,36,54,47,71,53,59,41,42,57,50,38,31,27,33,26,40,42,31,25],
+        at: [26,47,26,37,42,15,60,40,43,48,30,25,52,28,41,40,34,28,41,38,40,30,35,27,27,32,44,31],
+        rm: [32,29,31,25,21,23,25,39,33,21,36,21,14,23,33,27],
+        "1co": [31,16,23,21,13,20,40,13,27,33,34,31,13,40,58,24],
+        "2co": [24,17,18,18,21,18,16,24,15,18,33,21,14],
+        gl: [24,21,29,31,26,18],
+        ef: [23,22,21,32,33,24],
+        fp: [30,30,21,23],
+        cl: [29,23,25,18],
+        "1ts": [10,20,13,18,28],
+        "2ts": [12,17,18],
+        "1tm": [20,15,16,16,25,21],
+        "2tm": [18,26,17,22],
+        tt: [16,15,15],
+        fm: [25],
+        hb: [14,18,19,16,14,20,28,13,28,39,40,29,25],
+        tg: [27,26,18,17,20],
+        "1pe": [25,25,22,19,14],
+        "2pe": [21,22,18],
+        "1jo": [10,29,24,21,21],
+        "2jo": [13],
+        "3jo": [14],
+        jd: [25],
+        ap: [20,29,22,11,14,17,17,13,21,11,19,17,18,20,8,21,18,24,21,15,27,21]
+      };
+
+      function getVerseCountForChapter(bookObj, chapterNum) {
+        if (!bookObj) return 30;
+        // 1. Checa se o JSON ACF completo já está em memória
+        if (state.fullBibleData && Array.isArray(state.fullBibleData)) {
+          const match = state.fullBibleData.find(b =>
+            (b.name && b.name.toLowerCase() === bookObj.name.toLowerCase()) ||
+            (b.abbrev && b.abbrev.toLowerCase() === bookObj.abbrev.toLowerCase())
+          );
+          if (match && match.chapters && match.chapters[chapterNum - 1]) {
+            return match.chapters[chapterNum - 1].length;
+          }
         }
+
+        // 2. Consulta tabela canônica por ID do livro
+        if (BIBLE_VERSES_MAP[bookObj.id] && BIBLE_VERSES_MAP[bookObj.id][chapterNum - 1]) {
+          return BIBLE_VERSES_MAP[bookObj.id][chapterNum - 1];
         }
-        let nextIsPhrasing = false;
-        for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].trim()) {
-            nextIsPhrasing = /^\[\s*(.+?)\s*\]\s*(?:→|->|—>|-->|→)\s*(.+)$/.test(lines[j].trim());
-            break;
+
+        // 3. Fallback inteligente
+        return 30;
+      }
+
+      // ------------------------------------------------------------------------
+      // 3. ESTADO GLOBAL DA APLICAÇÃO (STATE)
+      // ------------------------------------------------------------------------
+      const state = {
+        theme: localStorage.getItem("acf_theme") || "claro",
+        fontSize: parseInt(localStorage.getItem("acf_font_size") || "18", 10),
+        lineHeight: parseFloat(localStorage.getItem("acf_line_height") || "1.75"),
+        fontFamily: localStorage.getItem("acf_font_family") || "serif",
+        currentBook: localStorage.getItem("acf_current_book") || "Salmos",
+        currentChapter: parseInt(localStorage.getItem("acf_current_chapter") || "23", 10),
+        currentVerse: parseInt(localStorage.getItem("acf_current_verse") || "1", 10),
+        targetVerse: parseInt(localStorage.getItem("acf_current_verse") || "0", 10),
+        activeBookmark: JSON.parse(localStorage.getItem("acf_bookmark") || '{"book":"Salmos","chapter":23,"verse":1,"text":"O Senhor é o meu pastor..."}'),
+        history: JSON.parse(localStorage.getItem("acf_history") || '[]'),
+        fullBibleData: null, // Caso o usuário carregue o JSON ACF completo
+        isFullOffline: false,
+        isLoading: false
+      };
+
+      // ------------------------------------------------------------------------
+      // 4. ELEMENTOS DO DOM
+      // ------------------------------------------------------------------------
+      const el = {
+        html: document.documentElement,
+        // Novo seletor unificado no topo
+        topSelector: document.getElementById("top-bible-selector"),
+        btnTopTrigger: document.getElementById("btn-top-bible-trigger"),
+        topTriggerCurRef: document.getElementById("top-trigger-cur-ref"),
+        topPickerDropdown: document.getElementById("top-picker-dropdown"),
+        topPickerBackdrop: document.getElementById("top-picker-backdrop"),
+        appHeaderTitle: document.getElementById("app-header-title"),
+        btnAppBack: document.getElementById("btn-app-back"),
+        viewStep1: document.getElementById("view-step-1"),
+        viewStep2: document.getElementById("view-step-2"),
+        viewStep3: document.getElementById("view-step-3"),
+        topBooksGrid: document.getElementById("top-books-grid"),
+        topChaptersGrid: document.getElementById("top-chapters-grid"),
+        topVersesGrid: document.getElementById("top-verses-grid"),
+        // Elementos legados mantidos para compatibilidade
+        sidebar: document.getElementById("nav-sidebar"),
+        sidebarOverlay: document.getElementById("sidebar-overlay"),
+        booksList: document.getElementById("sidebar-books-list"),
+        bookFilterInput: document.getElementById("sidebar-book-search"),
+        chapterPickerPanel: document.getElementById("chapter-picker-panel"),
+        pickerBookName: document.getElementById("picker-book-name"),
+        pickerChapterGrid: document.getElementById("picker-chapter-grid"),
+        displayBookTitle: document.getElementById("display-book-title"),
+        displayChapterTitle: document.getElementById("display-chapter-title"),
+        verseContainer: document.getElementById("verse-container"),
+        headerCurRef: document.getElementById("header-cur-ref"),
+        btnToggleSidebar: document.getElementById("btn-toggle-sidebar"),
+        btnPrevChapter: document.getElementById("btn-prev-chapter"),
+        btnNextChapter: document.getElementById("btn-next-chapter"),
+        btnQuickMark: document.getElementById("btn-quick-mark"),
+        btnOpenSearch: document.getElementById("btn-open-search"),
+        btnOpenFont: document.getElementById("btn-open-font"),
+        btnThemeToggle: document.getElementById("btn-theme-toggle"),
+        btnOpenBookmarks: document.getElementById("btn-open-bookmarks"),
+        btnOpenDatasource: document.getElementById("btn-open-datasource"),
+        brandHome: document.getElementById("brand-home"),
+        fontSizeLabel: document.getElementById("font-size-label"),
+        btnFontDec: document.getElementById("btn-font-dec"),
+        btnFontInc: document.getElementById("btn-font-inc"),
+        btnFontReset: document.getElementById("btn-font-reset"),
+        lineHeightLabel: document.getElementById("line-height-label"),
+        btnLineHeightDec: document.getElementById("btn-line-height-dec"),
+        btnLineHeightInc: document.getElementById("btn-line-height-inc"),
+        btnLineHeightReset: document.getElementById("btn-line-height-reset"),
+        btnFontSerif: document.getElementById("btn-font-serif"),
+        btnFontSans: document.getElementById("btn-font-sans"),
+        modalSearch: document.getElementById("modal-search"),
+        modalFont: document.getElementById("modal-font"),
+        modalBookmarks: document.getElementById("modal-bookmarks"),
+        modalDatasource: document.getElementById("modal-datasource"),
+        searchInput: document.getElementById("search-keyword-input"),
+        searchResultsBox: document.getElementById("search-results-box"),
+        searchFeedback: document.getElementById("search-feedback"),
+        searchCount: document.getElementById("search-count"),
+        activeBookmarkBox: document.getElementById("active-bookmark-box"),
+        historyListBox: document.getElementById("history-list-box"),
+        jsonDropzone: document.getElementById("json-dropzone"),
+        jsonFileInput: document.getElementById("json-file-input"),
+        btnDownloadFullAcf: document.getElementById("btn-download-full-acf"),
+        statusTitle: document.getElementById("status-title"),
+        statusDesc: document.getElementById("status-desc"),
+        toast: document.getElementById("toast-msg")
+      };
+
+      // ------------------------------------------------------------------------
+      // 5. FUNÇÕES DE UTILIDADE E TOAST
+      // ------------------------------------------------------------------------
+      // ------------------------------------------------------------------------
+      // FUNÇÃO SEGURA DE ROLAGEM
+      // ------------------------------------------------------------------------
+      function safeScrollTo(targetEl, smooth = false, containerSelector = 'main.reader-container', offsetAdjust = 24) {
+        if (!targetEl) return;
+        const container = document.querySelector(containerSelector);
+        if (!container) {
+           targetEl.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
+           return;
         }
+        const cRect = container.getBoundingClientRect();
+        const tRect = targetEl.getBoundingClientRect();
+        const offset = tRect.top - cRect.top + container.scrollTop;
+        container.scrollTo({
+          top: Math.max(0, offset - offsetAdjust),
+          behavior: smooth ? "smooth" : "auto"
+        });
+      }
+
+      function showToast(message) {
+        if (!el.toast) return;
+        el.toast.textContent = message;
+        el.toast.classList.add("show");
+        setTimeout(() => el.toast.classList.remove("show"), 2800);
+      }
+
+      function getBookInfo(nameOrId) {
+        const clean = (nameOrId || "").toLowerCase().trim();
+        return BIBLE_BOOKS.find(b =>
+          b.name.toLowerCase() === clean ||
+          b.id.toLowerCase() === clean ||
+          b.abbrev.toLowerCase() === clean
+        ) || BIBLE_BOOKS.find(b => b.name.toLowerCase().startsWith(clean));
+      }
+
+      // ------------------------------------------------------------------------
+      // 6. MOTOR DE DADOS E CACHE (INDEXEDDB + FETCH)
+      // ------------------------------------------------------------------------
+      const DB_NAME = "BibliaACF_DB_v2";
+      const STORE_NAME = "acf_cache";
+
+      function openDB() {
+        return new Promise((resolve) => {
+          if (!window.indexedDB) return resolve(null);
+          const request = indexedDB.open(DB_NAME, 1);
+          request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME);
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => resolve(null);
+        });
+      }
+
+      async function getCachedChapter(key) {
+        const db = await openDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+          try {
+            const tx = db.transaction(STORE_NAME, "readonly");
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          } catch (e) {
+            resolve(null);
+          }
+        });
+      }
+
+      async function setCachedChapter(key, verses) {
+        const db = await openDB();
+        if (!db) return;
+        try {
+          const tx = db.transaction(STORE_NAME, "readwrite");
+          const store = tx.objectStore(STORE_NAME);
+          store.put(verses, key);
+        } catch (e) {
+          console.warn("Erro ao salvar no cache IndexedDB:", e);
+        }
+      }
+
+      /**
+       * Carrega versículos de um capítulo:
+       * 1) Se existir no FullBibleData em memória, usa instantaneamente
+       * 2) Se existir no cache IndexedDB, usa instantaneamente
+       * 3) Se for um dos preloaded, usa instantaneamente
+       * 4) Faz fetch de API pública (https://bible-api.com/?translation=almeida) e salva no cache
+       */
+      async function loadChapterVerses(bookName, chapterNumber, skipLoadingUI = false) {
+        const cacheKey = `${bookName}_${chapterNumber}`;
+
+        // 1. Memória Completa
+        if (state.fullBibleData) {
+          const bookObj = state.fullBibleData.find(b =>
+            (b.name && b.name.toLowerCase() === bookName.toLowerCase()) ||
+            (b.abbrev && b.abbrev.toLowerCase() === getBookInfo(bookName)?.abbrev)
+          );
+          if (bookObj && bookObj.chapters && bookObj.chapters[chapterNumber - 1]) {
+            return bookObj.chapters[chapterNumber - 1];
+          }
+        }
+
+        // 2. Pré-carregado nativo
+        if (PRELOADED_ACF[cacheKey]) {
+          return PRELOADED_ACF[cacheKey];
+        }
+
+        // 3. Cache IndexedDB
+        const cached = await getCachedChapter(cacheKey);
+        const bookObjForApi = getBookInfo(bookName);
+        const expectedVerses = getVerseCountForChapter(bookObjForApi, chapterNumber);
+        
+        // Proteção contra cache corrompido (bug anterior da API que salvava apenas 1 versículo)
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          if (cached.length === 1 && expectedVerses > 1) {
+            console.warn("Cache incompleto detectado, buscando novamente na API.");
+          } else {
+            return cached;
+          }
+        }
+
+        // 4. API Aberta com tradução Almeida (ACF / Almeida)
+        if (!skipLoadingUI) {
+          state.isLoading = true;
+          renderLoadingState();
+        }
+
+        try {
+          // Baixa a Bíblia ACF 2011 real diretamente do GitHub (substituindo bible-api.com que usava ARC/JFA)
+          const response = await fetch("https://raw.githubusercontent.com/marcossancal/Biblias-em-JSON/master/json/biblia-almeida-corrigida-fiel.json");
+          if (!response.ok) throw new Error("Falha na resposta da API ACF do GitHub");
+          const data = await response.json();
+          
+          let normalized = null;
+          if (Array.isArray(data)) {
+            if (data.length > 0 && data[0].livro && data[0].capitulo && data[0].versiculos) {
+              const bookMap = {};
+              normalized = [];
+              for (const entry of data) {
+                if (entry.livro && entry.capitulo && entry.versiculos) {
+                  const abbrev = entry.livro;
+                  if (!bookMap[abbrev]) {
+                    const bInfo = getBookInfo(abbrev);
+                    bookMap[abbrev] = { 
+                      name: bInfo ? bInfo.name : abbrev, 
+                      abbrev: abbrev, 
+                      chapters: [] 
+                    };
+                    normalized.push(bookMap[abbrev]);
+                  }
+                  const capIdx = entry.capitulo - 1;
+                  while (bookMap[abbrev].chapters.length <= capIdx) {
+                    bookMap[abbrev].chapters.push([]);
+                  }
+                  bookMap[abbrev].chapters[capIdx] = entry.versiculos.map(v => v.replace(/^\d+\s+/, ''));
+                }
+              }
+            } else {
+              normalized = data.map(item => {
+                const bInfo = getBookInfo(item.abbrev || item.name);
+                return {
+                  name: bInfo ? bInfo.name : (item.name || item.abbrev),
+                  abbrev: item.abbrev,
+                  chapters: item.chapters
+                };
+              });
+            }
+          }
+          
+          if (normalized && normalized.length > 0) {
+            state.fullBibleData = normalized;
+            state.isFullOffline = true;
+            if (typeof updateDatasourceStatus === 'function') updateDatasourceStatus(true, `Bíblia ACF 2011 Automática Carregada`);
+            
+            const bookObj = state.fullBibleData.find(b =>
+              (b.name && b.name.toLowerCase() === bookName.toLowerCase()) ||
+              (b.abbrev && b.abbrev.toLowerCase() === getBookInfo(bookName)?.abbrev)
+            );
+            
+            if (bookObj && bookObj.chapters && bookObj.chapters[chapterNumber - 1]) {
+              const versesText = bookObj.chapters[chapterNumber - 1];
+              await setCachedChapter(cacheKey, versesText);
+              return versesText;
+            }
+          }
+          throw new Error("Nenhum versículo retornado");
+        } catch (error) {
+          console.warn("API de leitura indisponível, usando fallback:", error);
+          if (skipLoadingUI) return null;
+          // Fallback gracioso caso esteja offline
+          return [
+            `Capítulo ${chapterNumber} de ${bookName} (Almeida Corrigida Fiel).`,
+            "Você está no modo offline para este capítulo. Para ter a Bíblia 100% offline, utilize o botão 'Carregar JSON ACF Completo' no cabeçalho ou clique em 'Baixar ACF 2011 Completa'."
+          ];
+        } finally {
+          state.isLoading = false;
+        }
+      }
+
+      // ------------------------------------------------------------------------
+      
+      // ---- SISTEMA DE NOTAS / COMENTÁRIOS COM FORMATAÇÃO RICA AUTOMÁTICA ----
+      let userNotes = {}; // Populado via Firebase e LocalStorage
+      let currentUser = null;
+      let isAdmin = false;
+      const ADMIN_EMAIL = 'diogofukuoka85@gmail.com';
+      
+      const elNotesSidebar = document.getElementById("notes-sidebar");
+      const elBtnCloseNotes = document.getElementById("btn-close-notes");
+      const elNoteEditor = document.getElementById("note-editor");
+      const elNoteTextarea = document.getElementById("note-textarea");
+      const elBtnSaveNote = document.getElementById("btn-save-note");
+      const elBtnDeleteNote = document.getElementById("btn-delete-note");
+      const elBtnAdminLogin = document.getElementById("btn-admin-login");
+      
+      let currentNoteContext = null;
+
+      // Local storage helpers para garantir que o usuário nunca perca suas anotações
+      function getLocalNotes() {
+        try {
+          return JSON.parse(localStorage.getItem("acf_user_notes") || "{}");
+        } catch (e) {
+          return {};
+        }
+      }
+      function getLocalNote(key) {
+        const notes = getLocalNotes();
+        return notes[key] || "";
+      }
+      function saveLocalNote(key, text) {
+        try {
+          const notes = getLocalNotes();
+          notes[key] = text;
+          localStorage.setItem("acf_user_notes", JSON.stringify(notes));
+        } catch (e) {
+          console.warn("Local storage save error:", e);
+        }
+      }
+      function removeLocalNote(key) {
+        try {
+          const notes = getLocalNotes();
+          delete notes[key];
+          localStorage.setItem("acf_user_notes", JSON.stringify(notes));
+        } catch (e) {}
+      }
+      function updateVerseNoteIndicators() {
+        document.querySelectorAll('.verse-paragraph').forEach(p => {
+          const b = p.dataset.book;
+          const c = p.dataset.chapter;
+          const v = p.dataset.verse;
+          if (b && c && v) {
+            const key = `${b}_${c}_${v}`;
+            if (userNotes && userNotes[key]) {
+              p.classList.add("has-note");
+            } else {
+              p.classList.remove("has-note");
+            }
+          }
+        });
+      }
+
+      // Inicializa com notas locais
+      userNotes = Object.assign({}, getLocalNotes());
+
+      // --- MOTOR DE FORMATAÇÃO AUTOMÁTICA DE ESTUDO BÍBLICO ---
+      // Converte: [ Texto Bíblico ] → Frase Chave (Comentário)
+      // em: [ <em>Texto Bíblico</em> ] → <strong>Frase Chave</strong> (Comentário)
+      function formatCommentLine(rawLine) {
+        const line = rawLine.trim();
+        if (!line) return '<div class="note-spacer"><br></div>';
+
+        // Cabeçalhos Específicos de Diagramador / Phrasing
+        if (/diagramador b[íi]blico/i.test(line) || /analista de vers[íi]culos/i.test(line)) {
+          return `<div class="note-line"><strong>I. DIAGRAMADOR BÍBLICO / ANALISTA DE VERSÍCULOS</strong></div>`;
+        }
+        if (/an[áa]lise de fraseamento/i.test(line) || /r[óo]tulos sem[âa]nticos/i.test(line)) {
+          return `<div class="note-spacer"><br></div><div class="note-line"><strong>II. ANÁLISE DE FRASEAMENTO (PHRASING) E RÓTULOS SEMÂNTICOS</strong></div>`;
+        }
+
+        // Se já contém marcação HTML de versículo analisado
+        if (line.includes('note-verse-analysis') || (line.includes('<em>') && line.includes('<strong>'))) {
+          return line.startsWith('<div') ? line : `<div class="note-line note-verse-analysis">${line}</div>`;
+        }
+
+        // Padrão 1: [ bíblia ] → ou -> ou — frase (comentário)
+        // Suporta formatação do tipo: [ [texto] — Rótulo ] (Rótulo 2)
+        // Divide pela PRIMEIRA ocorrência do separador (→|->|—>|-->|→|—) que estiver fora de colchetes, ou assume o separador mais evidente
+        const match = line.match(/^\s*\[?\s*\[?\s*(.+?)\s*\]?\s*(?:→|->|—>|-->|→|—)\s*(.+)$/);
+        if (match) {
+          // No match, group 1 é o texto antes do traço/seta, group 2 é o texto depois.
+          // Mas se o texto bíblico tinha hífen (ex: "rogo-te"), o regex simples falha.
+          // Vamos usar um split mais inteligente abaixo caso esse regex engula hífens internos.
+        }
+
+        // Nova lógica de Parse mais robusta
+        let parsed = false;
+        let bibleText = "";
+        let boldText = "";
+        let parenText = "";
+        
+        // Vamos procurar os delimitadores principais: " — " ou " -> " ou " → " ou " --> "
+        const delimiterRegex = /\s+(?:—|->|→|-->|—>)\s+/;
+        const parts = line.split(delimiterRegex);
+        
+        if (parts.length >= 2) {
+           // O que vem antes do delimitador é a Bíblia. O que vem depois é a explicação.
+           bibleText = parts[0];
+           let rest = parts.slice(1).join(" - "); // Junta de volta se houver mais de um delimitador
+           
+           // Limpeza da Bíblia: remove todos os colchetes do início e do final
+           bibleText = bibleText.replace(/^\[\s*\[?\s*/, '').replace(/\s*\]?\s*\]?$/, '').trim();
+           
+           // Limpeza do Resto:
+           // O "rest" pode terminar com algo como "] (Exortação)"
+           const parenMatch = rest.match(/^(.*?)(?:\s*\]?\s*(\(.*\)))?\s*\]?$/);
+           if (parenMatch && parenMatch[2]) {
+              boldText = parenMatch[1].replace(/\]\s*$/, '').trim();
+              parenText = parenMatch[2].trim();
+           } else {
+              boldText = rest.replace(/\]\s*$/, '').trim();
+           }
+           
+           return `<div class="note-line note-verse-analysis">[ <em>${escapeHtml(bibleText)}</em> ] <span class="note-arrow">→</span> <strong>${escapeHtml(boldText)}</strong>${parenText ? ` <span class="note-paren">${escapeHtml(parenText)}</span>` : ""}</div>`;
         }
         
-        if (prevIsPhrasing && nextIsPhrasing) {
-            continue; // Pula essa linha em branco!
+        // Padrão 2: Texto Bíblico (Rótulo) - colado diretamente de ferramentas de Phrasing
+        // Ex: Graça, misericórdia e paz, (Sujeito Composto / Núcleo da Bênção)
+        const match2 = line.match(/^([^(]+?)\s*(\(.+?\))\.?$/);
+        if (match2) {
+          const bibleText = match2[1].trim();
+          const boldText = match2[2].trim();
+          return `<div class="note-line note-verse-analysis">[ <em>${escapeHtml(bibleText)}</em> ] <strong>${escapeHtml(boldText)}</strong></div>`;
         }
-    }
-    result.push(l);
-}
-console.log(result.join("\n"));
+
+        // Padrão 3: Rótulo: "Texto Bíblico"
+        // Ex: Condição Negativa: "Todo aquele que prevarica"
+        const match3 = line.match(/^([^:]+?):\s*"(.+)"\s*$/);
+        if (match3) {
+          const boldText = match3[1].trim();
+          const bibleText = match3[2].trim();
+          return `<div class="note-line note-verse-analysis">[ <em>${escapeHtml(bibleText)}</em> ] <span class="note-arrow">→</span> <strong>${escapeHtml(boldText)}</strong></div>`;
+        }
+
+        // Linha regular de comentário
+        return `<div class="note-line">${escapeHtml(line)}</div>`;
+      }
+
+      function formatCommentToHtml(rawContent) {
+        if (!rawContent) return "";
+        let textToProcess = rawContent;
+        if (rawContent.includes('<div') || rawContent.includes('<p>') || rawContent.includes('<br>')) {
+          const temp = document.createElement("div");
+          temp.innerHTML = rawContent;
+          textToProcess = temp.innerText || temp.textContent || "";
+        }
+        const lines = textToProcess.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        let result = [];
+        for (let i = 0; i < lines.length; i++) {
+          const l = lines[i].trim();
+          if (!l) {
+            let prevIsPhrasing = false;
+            for (let j = i - 1; j >= 0; j--) {
+              if (lines[j].trim()) {
+                const prev = lines[j].trim();
+                prevIsPhrasing = /^\s*\[?\s*\[?\s*(.+?)\s*\]?\s*(?:→|->|—>|-->|→|—|-)\s*(.+)$/.test(prev) || 
+                                 /^([^(]+?)\s*(\(.+?\))\.?$/.test(prev) ||
+                                 /^([^:]+?):\s*".+"\s*$/.test(prev) ||
+                                 /an[áa]lise de fraseamento/i.test(prev) || 
+                                 /r[óo]tulos sem[âa]nticos/i.test(prev);
+                break;
+              }
+            }
+            let nextIsPhrasing = false;
+            for (let j = i + 1; j < lines.length; j++) {
+              if (lines[j].trim()) {
+                const next = lines[j].trim();
+                nextIsPhrasing = /^\s*\[?\s*\[?\s*(.+?)\s*\]?\s*(?:→|->|—>|-->|→|—|-)\s*(.+)$/.test(next) ||
+                                 /^([^(]+?)\s*(\(.+?\))\.?$/.test(next) ||
+                                 /^([^:]+?):\s*".+"\s*$/.test(next);
+                break;
+              }
+            }
+            if (prevIsPhrasing && nextIsPhrasing) {
+              continue; // Remove linha em branco entre blocos de fraseamento
+            }
+          }
+          result.push(formatCommentLine(l));
+        }
+        return result.join("");
+      }
+
+      function insertHtmlAtCursor(html) {
+        if (!elNoteEditor) return;
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          if (elNoteEditor.contains(range.commonAncestorContainer)) {
+            range.deleteContents();
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = html;
+            const frag = document.createDocumentFragment();
+            let node;
+            let lastNode;
+            while ((node = tempDiv.firstChild)) {
+              lastNode = frag.appendChild(node);
+            }
+            range.insertNode(frag);
+            if (lastNode) {
+              range.setStartAfter(lastNode);
+              range.collapse(true);
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+            if (elNoteTextarea) elNoteTextarea.value = elNoteEditor.innerHTML;
+            return;
+          }
+        }
+        // Fallback quando não há seleção ativa
+        elNoteEditor.innerHTML += html;
+        if (elNoteTextarea) elNoteTextarea.value = elNoteEditor.innerHTML;
+      }
+
+      function getNoteContent() {
+        if (!elNoteEditor) return "";
+        const text = (elNoteEditor.innerText || elNoteEditor.textContent || "").trim();
+        if (!text) return "";
+        return elNoteEditor.innerHTML.trim();
+      }
+
+      function setNoteContent(val) {
+        if (!elNoteEditor) return;
+        if (!val) {
+          elNoteEditor.innerHTML = "";
+          if (elNoteTextarea) elNoteTextarea.value = "";
+          return;
+        }
+        if (typeof val === "string" && (val.includes("<div") || val.includes("<span") || val.includes("<em>") || val.includes("<strong>"))) {
+          elNoteEditor.innerHTML = val;
+        } else {
+          elNoteEditor.innerHTML = formatCommentToHtml(String(val));
+        }
+        if (elNoteTextarea) elNoteTextarea.value = elNoteEditor.innerHTML;
+      }
+
+      // Interceptar colar no editor para formatar automaticamente
+      if (elNoteEditor) {
+        elNoteEditor.addEventListener("paste", (e) => {
+          const clipboardData = e.clipboardData || window.clipboardData;
+          if (!clipboardData) return;
+          const pastedText = clipboardData.getData("text/plain");
+          if (!pastedText) return;
+
+          e.preventDefault();
+
+          const formattedHtml = formatCommentToHtml(pastedText);
+
+          const currentText = (elNoteEditor.innerText || elNoteEditor.textContent || "").trim();
+          const sel = window.getSelection();
+          const isAllSelected = sel && sel.toString().trim().length > 0 && sel.toString().trim() === currentText;
+
+          if (!currentText || isAllSelected) {
+            elNoteEditor.innerHTML = formattedHtml;
+          } else {
+            document.execCommand("insertHTML", false, formattedHtml);
+          }
+          
+          if (elNoteTextarea) elNoteTextarea.value = elNoteEditor.innerHTML;
+          showToast("Comentário colado e formatado!");
+        });
+
+        elNoteEditor.addEventListener("input", () => {
+          if (elNoteTextarea) elNoteTextarea.value = elNoteEditor.innerHTML;
+        });
+      }
+
+      // Botões da Barra de Ferramentas de Formatação (removidos)
+
+      // Firebase Init & Auth
+      const initFirebase = () => {
+        if (window.firebaseApp) {
+          const { auth, db, onAuthStateChanged, signIn, signInRedirect, signOut, collection, onSnapshot } = window.firebaseApp;
+          
+          function updateEditorsPermission() {
+            document.querySelectorAll(".mobile-feed-editor").forEach(el => {
+              el.setAttribute("contenteditable", isAdmin ? "true" : "false");
+              if (isAdmin) {
+                el.setAttribute("data-placeholder", "Escreva seu comentário ou cole sua análise...");
+              } else {
+                el.removeAttribute("data-placeholder");
+              }
+            });
+          }
+          onAuthStateChanged((user) => {
+            currentUser = user;
+            if (user) {
+              if (user.email === ADMIN_EMAIL) {
+                isAdmin = true;
+                elBtnAdminLogin.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+                elBtnAdminLogin.title = "Sair (Admin)";
+                showToast("Autenticado como Admin");
+                updateEditorsPermission();
+              } else {
+                isAdmin = false;
+                elBtnAdminLogin.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+                elBtnAdminLogin.title = "Sair (Visitante)";
+                showToast("Autenticado como Visitante: " + user.email);
+                updateEditorsPermission();
+              }
+            } else {
+              isAdmin = false;
+              elBtnAdminLogin.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+              elBtnAdminLogin.title = "Login de Administrador (Firebase)";
+              updateEditorsPermission();
+            }
+          });
+
+          elBtnAdminLogin.addEventListener("click", () => {
+            if (currentUser) {
+              signOut();
+              showToast("Você saiu");
+            } else {
+              showToast("Iniciando login...");
+
+              signIn().catch(e => {
+                 console.error("Firebase Login Error:", e);
+                 if (e.code === 'auth/unauthorized-domain') {
+                   showToast("Erro: Domínio não autorizado.");
+                   alert("SEGURANÇA DO FIREBASE:\n\nEste domínio (" + window.location.hostname + ") ainda não foi autorizado no seu painel do Firebase.\n\nPor favor, copie o endereço na próxima tela e cole na seção Authentication > Configurações > Domínios Autorizados.");
+                   window.prompt("Copie este endereço e adicione no Firebase:", window.location.hostname);
+                 } else if (e.code === 'auth/popup-blocked') {
+                   // Se o navegador bloquear o popup, forçamos o redirecionamento
+                   if (typeof signInRedirect === 'function') {
+                      signInRedirect();
+                   } else {
+                      showToast("Popup bloqueado pelo navegador.");
+                   }
+                 } else if (e.code === 'auth/popup-closed-by-user') {
+                   showToast("Login cancelado pelo usuário.");
+                 } else {
+                   showToast("Erro: " + (e.message || e.code));
+                   alert("Erro de autenticação:\n" + e.message);
+                 }
+              });
+            }
+          });
+
+          // Sincronizar notas do Firestore (Global)
+          const commentsRef = collection(db, "comments");
+          onSnapshot(commentsRef, (snapshot) => {
+            userNotes = Object.assign({}, getLocalNotes());
+            snapshot.forEach(doc => {
+              userNotes[doc.id] = doc.data().text;
+            });
+            updateVerseNoteIndicators();
+          });
+        } else {
+          setTimeout(initFirebase, 200);
+        }
+      };
+      initFirebase();
+
+
+
+      function appendNotesChapterToFeed(book, chapter, prepend = false) {
+        const mobileFeed = document.getElementById("mobile-notes-feed");
+        if (!mobileFeed) return;
+        
+        // Wrap everything for this chapter in a container
+        const wrap = document.createElement("div");
+        wrap.className = "notes-chapter-wrapper";
+        wrap.dataset.chapter = chapter;
+        
+        const verseEls = document.querySelectorAll(`.verse-paragraph[data-chapter="${chapter}"]`);
+        if (verseEls.length > 0) {
+          verseEls.forEach(vEl => {
+            const vNum = vEl.dataset.verse;
+            let vText = "";
+            const textSpan = vEl.querySelector(".verse-text");
+            if (textSpan) vText = textSpan.textContent;
+            
+            const vKey = `${book}_${chapter}_${vNum}`;
+            const vNote = userNotes[vKey] || getLocalNote(vKey) || "";
+            
+            const feedItem = document.createElement("div");
+            feedItem.className = "mobile-feed-item";
+            feedItem.id = `mobile-feed-item-${chapter}-${vNum}`;
+            feedItem.innerHTML = `
+              <div class="mobile-feed-header" data-chapter="${chapter}" data-scroll-to="${vNum}" title="Rolar texto bíblico até este versículo">${book} ${chapter}:${vNum}</div>
+              <div class="mobile-feed-text">${escapeHtml(vText)}</div>
+              <div class="mobile-feed-editor" contenteditable="${isAdmin ? 'true' : 'false'}" data-chapter="${chapter}" data-verse="${vNum}" ${isAdmin ? 'data-placeholder="Escreva seu comentário ou cole sua análise..."' : ''}>${vNote}</div>
+            `;
+            
+            // Evento clique no header
+            feedItem.querySelector(".mobile-feed-header").addEventListener("click", () => {
+              const formattedBook = book.toLowerCase().replace(/\s+/g, '-');
+              const targetVEl = document.getElementById(`verse-${formattedBook}-${chapter}-${vNum}`);
+              if (targetVEl) {
+                safeScrollTo(targetVEl, true);
+                document.querySelectorAll('.active-note-verse').forEach(el => el.classList.remove('active-note-verse'));
+                targetVEl.classList.add("active-note-verse");
+                if (window.innerWidth <= 768) closeNotesSidebar();
+              }
+            });
+            
+            const editor = feedItem.querySelector(".mobile-feed-editor");
+            editor.addEventListener("paste", (e) => {
+              const clipboardData = e.clipboardData || window.clipboardData;
+              if (!clipboardData) return;
+              const pastedText = clipboardData.getData("text/plain");
+              if (!pastedText) return;
+              e.preventDefault();
+              
+              const currentText = (editor.innerText || editor.textContent || "").trim();
+              const sel = window.getSelection();
+              const isAllSelected = sel && sel.toString().trim().length > 0 && sel.toString().trim() === currentText;
+              
+              let formattedHtml = pastedText;
+              if (typeof formatCommentToHtml === 'function') {
+                 formattedHtml = formatCommentToHtml(pastedText);
+              }
+              
+              if (!currentText || isAllSelected) {
+                editor.innerHTML = formattedHtml;
+              } else {
+                document.execCommand("insertHTML", false, formattedHtml);
+              }
+              editor.dispatchEvent(new Event('blur'));
+            });
+            
+            editor.addEventListener("blur", (e) => {
+               const vKey = `${book}_${chapter}_${vNum}`;
+               const noteHtml = editor.innerHTML.trim() === "<br>" ? "" : editor.innerHTML;
+               if (noteHtml !== (userNotes[vKey] || "")) {
+                 saveLocalNote(vKey, noteHtml);
+                 userNotes[vKey] = noteHtml;
+                 if (typeof updateVerseNoteIndicators === 'function') updateVerseNoteIndicators();
+                 if (isAdmin && window.firebaseApp && noteHtml) {
+                    const { db, doc, setDoc } = window.firebaseApp;
+                    setDoc(doc(db, "comments", vKey), { text: noteHtml, updatedAt: Date.now() });
+                 } else if (isAdmin && window.firebaseApp && !noteHtml) {
+                    const { db, doc, deleteDoc } = window.firebaseApp;
+                    deleteDoc(doc(db, "comments", vKey));
+                 }
+               }
+            });
+            
+            editor.addEventListener("focus", () => {
+               currentNoteContext = { book, chapter, verse: vNum, text: vText };
+            });
+            
+            wrap.appendChild(feedItem);
+          });
+        }
+        
+        const topSentinel = document.getElementById("notes-sentinel-top");
+        const bottomSentinel = document.getElementById("notes-sentinel-bottom");
+        
+        if (prepend && topSentinel) {
+           mobileFeed.insertBefore(wrap, topSentinel.nextSibling);
+        } else if (bottomSentinel) {
+           mobileFeed.insertBefore(wrap, bottomSentinel);
+        } else {
+           mobileFeed.appendChild(wrap);
+        }
+      }
+
+      function openMobileNoteModal(book, chapter, verse, text, key) {
+        openModal("modal-note-mobile");
+        document.getElementById("modal-note-title").textContent = `${book} ${chapter}:${verse}`;
+        document.getElementById("mobile-note-verse-text").textContent = text;
+        
+        const editor = document.getElementById("mobile-note-editor");
+        editor.innerHTML = userNotes[key] || getLocalNote(key) || "";
+        editor.setAttribute("contenteditable", isAdmin ? "true" : "false");
+        
+        // Listeners
+        editor.onblur = (e) => {
+           const noteHtml = editor.innerHTML.trim() === "<br>" ? "" : editor.innerHTML;
+           if (noteHtml !== (userNotes[key] || "")) {
+             saveLocalNote(key, noteHtml);
+             userNotes[key] = noteHtml;
+             if (typeof updateVerseNoteIndicators === 'function') updateVerseNoteIndicators();
+             if (isAdmin && window.firebaseApp && noteHtml) {
+                const { db, doc, setDoc } = window.firebaseApp;
+                setDoc(doc(db, "comments", key), { text: noteHtml, updatedAt: Date.now() });
+             } else if (isAdmin && window.firebaseApp && !noteHtml) {
+                const { db, doc, deleteDoc } = window.firebaseApp;
+                deleteDoc(doc(db, "comments", key));
+             }
+           }
+        };
+        editor.onpaste = (e) => {
+           // Mesma logica de paste
+           const clipboardData = e.clipboardData || window.clipboardData;
+           if (!clipboardData) return;
+           const pastedText = clipboardData.getData("text/plain");
+           if (!pastedText) return;
+           e.preventDefault();
+           if (typeof formatCommentToHtml === 'function') {
+             const formattedHtml = formatCommentToHtml(pastedText);
+             document.execCommand("insertHTML", false, formattedHtml);
+           }
+           editor.blur();
+        };
+      }
+
+      function openNotesSidebar(book, chapter, verse, text) {
+        currentNoteContext = { book, chapter, verse, text };
+        const key = `${book}_${chapter}_${verse}`;
+        
+        // Condicional de tela
+        if (window.innerWidth < 768) {
+           openMobileNoteModal(book, chapter, verse, text, key);
+           return;
+        }
+        
+        const mobileFeed = document.getElementById("mobile-notes-feed");
+        const actionsBox = document.querySelector(".notes-actions");
+        
+        if (mobileFeed) {
+          if (elNoteEditor) elNoteEditor.style.display = "none";
+          if (elNoteTextarea) elNoteTextarea.style.display = "none";
+          if (actionsBox) actionsBox.style.display = "none";
+          mobileFeed.style.display = "block";
+          
+          mobileFeed.innerHTML = `
+            <div id="notes-sentinel-top" class="scroll-sentinel" style="height: 1px; width: 100%;"></div>
+            <div id="notes-sentinel-bottom" class="scroll-sentinel" style="height: 1px; width: 100%;"></div>
+          `;
+          
+          const sortedChapters = Array.from(loadedChapters).sort((a,b)=>a-b);
+          for(let chap of sortedChapters) {
+             appendNotesChapterToFeed(book, chap, false);
+          }
+          
+          const topSentinel = document.getElementById("notes-sentinel-top");
+          const bottomSentinel = document.getElementById("notes-sentinel-bottom");
+          
+          if (!window.notesScrollObserver) {
+             window.notesScrollObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                   if (entry.isIntersecting) {
+                      if (entry.target.id === 'notes-sentinel-bottom') {
+                         loadNextChapterScroll();
+                      } else if (entry.target.id === 'notes-sentinel-top') {
+                         loadPrevChapterScroll();
+                      }
+                   }
+                });
+             }, { root: mobileFeed, rootMargin: "200px", threshold: 0 });
+          }
+          window.notesScrollObserver.disconnect();
+          if (topSentinel) window.notesScrollObserver.observe(topSentinel);
+          if (bottomSentinel) window.notesScrollObserver.observe(bottomSentinel);
+        }
+        
+        if (elNotesSidebar) {
+           elNotesSidebar.classList.add("open");
+           elNotesSidebar.setAttribute("aria-hidden", "false");
+        }
+        
+        if (window.innerWidth <= 768) {
+          el.sidebarOverlay.classList.add("active");
+        }
+        
+        document.querySelectorAll('.active-note-verse').forEach(el => el.classList.remove('active-note-verse'));
+        const formattedBook = book.toLowerCase().replace(/\s+/g, '-');
+        const vEl = document.getElementById(`verse-${formattedBook}-${chapter}-${verse}`) || 
+                     document.querySelector(`.verse-paragraph[data-chapter="${chapter}"][data-verse="${verse}"]`);
+        if (vEl) {
+          vEl.classList.add("active-note-verse");
+        }
+        
+        // Aumentar o timeout para garantir que as animações de layout (margin/transform) terminem no mobile.
+        setTimeout(() => {
+          if (mobileFeed) {
+            const target = document.getElementById(`mobile-feed-item-${chapter}-${verse}`);
+            if (target) {
+              const container = document.getElementById("mobile-notes-feed");
+              if (container) {
+                // Força o contêiner pai a não rolar
+                const parent = document.querySelector(".notes-content");
+                if (parent) parent.scrollTop = 0;
+                
+                // Desativa rolagem suave temporariamente para salto instantâneo
+                const originalBehavior = container.style.scrollBehavior || '';
+                container.style.scrollBehavior = 'auto';
+                
+                // Calcula a distância usando offsetTop, que é imune a bugs de transição CSS (como scale/transform do sidebar)
+                let current = target;
+                let offsetTop = 0;
+                while (current && current !== container) {
+                   offsetTop += current.offsetTop || 0;
+                   current = current.offsetParent;
+                }
+                
+                // Ajusta scrollTop
+                container.scrollTop = Math.max(0, offsetTop - 20);
+                
+                // Restaura o comportamento
+                container.style.scrollBehavior = originalBehavior;
+              }
+              
+              const ed = target.querySelector('.mobile-feed-editor');
+              if (ed && ed.getAttribute("contenteditable") === "true") {
+                setTimeout(() => {
+                   ed.focus({preventScroll: true});
+                }, 50);
+              }
+            }
+          }
+        }, 400);
+      }
+
+      function closeNotesSidebar() {
+        if (document.activeElement && document.activeElement.classList.contains("mobile-feed-editor")) {
+          document.activeElement.blur();
+        }
+        document.querySelectorAll('.active-note-verse').forEach(el => el.classList.remove('active-note-verse'));
+        if (elNotesSidebar) {
+           elNotesSidebar.classList.remove("open");
+           elNotesSidebar.setAttribute("aria-hidden", "true");
+        }
+        currentNoteContext = null;
+        if (window.innerWidth <= 768 && !el.sidebar.classList.contains("open")) {
+          el.sidebarOverlay.classList.remove("active");
+        }
+      }
+
+      function saveCurrentNote() {
+        if (!currentNoteContext) return;
+        const key = `${currentNoteContext.book}_${currentNoteContext.chapter}_${currentNoteContext.verse}`;
+        const noteHtml = getNoteContent();
+        
+        if (!noteHtml) {
+          deleteNote();
+          return;
+        }
+
+        // Salva localmente primeiro para segurança absoluta dos dados
+        saveLocalNote(key, noteHtml);
+        userNotes[key] = noteHtml;
+        updateVerseNoteIndicators();
+
+        if (isAdmin && window.firebaseApp) {
+          showToast("Salvando anotação...");
+          const { db, doc, setDoc } = window.firebaseApp;
+          setDoc(doc(db, "comments", key), {
+             text: noteHtml,
+             updatedAt: Date.now()
+          }).then(() => {
+            showToast("Anotação salva com sucesso!");
+            closeNotesSidebar();
+          }).catch(err => {
+            console.error("Save error:", err);
+            showToast("Anotação salva localmente. (Erro na nuvem: " + err.message + ")");
+            closeNotesSidebar();
+          });
+        } else {
+          showToast("Anotação salva com sucesso!");
+          closeNotesSidebar();
+        }
+      }
+      
+      function deleteNote() {
+        if (!currentNoteContext) return;
+        const key = `${currentNoteContext.book}_${currentNoteContext.chapter}_${currentNoteContext.verse}`;
+        
+        delete userNotes[key];
+        removeLocalNote(key);
+        updateVerseNoteIndicators();
+
+        if (isAdmin && window.firebaseApp) {
+          showToast("Apagando...");
+          const { db, doc, deleteDoc } = window.firebaseApp;
+          deleteDoc(doc(db, "comments", key)).then(() => {
+            showToast("Anotação removida.");
+            closeNotesSidebar();
+          }).catch(err => {
+            console.error("Delete error:", err);
+            showToast("Erro ao remover no Firebase: " + err.message);
+            closeNotesSidebar();
+          });
+        } else {
+          showToast("Anotação removida.");
+          closeNotesSidebar();
+        }
+      }
+
+      if (elBtnCloseNotes) elBtnCloseNotes.addEventListener("click", closeNotesSidebar);
+      if (elBtnSaveNote) elBtnSaveNote.addEventListener("click", saveCurrentNote);
+      if (elBtnDeleteNote) elBtnDeleteNote.addEventListener("click", deleteNote);
+      
+      
+      let googleTokenClient = null;
+      let pendingDocsText = "";
+
+      function initGoogleDocsClient() {
+        if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+          console.error("GSI (Google Identity Services) não carregou a tempo.");
+          return;
+        }
+        
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: "220964388907-u7a4flg2mo2jdb77gjc8fssindcmv66p.apps.googleusercontent.com",
+          scope: "https://www.googleapis.com/auth/documents",
+          callback: (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              exportToGoogleDocsAPI(tokenResponse.access_token, pendingDocsText, currentNoteContext);
+            } else {
+              showToast("Falha ao obter autorização do Google.");
+            }
+          },
+        });
+      }
+
+      async function exportToGoogleDocsAPI(accessToken, htmlContent, ctx) {
+        showToast("Criando documento no Google Docs...");
+        try {
+          const title = `Anotação - ${ctx.book} ${ctx.chapter}:${ctx.verse}`;
+          
+          // 1. Criar um documento em branco
+          const createRes = await fetch("https://docs.googleapis.com/v1/documents", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              title: title
+            })
+          });
+          
+          if (!createRes.ok) throw new Error("Falha ao criar o documento");
+          const createData = await createRes.json();
+          const documentId = createData.documentId;
+          
+          // 2. Analisar o HTML para extrair texto e formatação
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = htmlContent;
+          
+          let fullText = "";
+          let formatting = [];
+          
+          function traverse(node) {
+            if (node.nodeType === 3) {
+              fullText += node.textContent;
+            } else if (node.nodeType === 1) {
+              const isBlock = ['DIV', 'P', 'BR'].includes(node.tagName);
+              const start = fullText.length;
+              
+              if (node.tagName === 'BR') {
+                  fullText += '\n';
+              } else {
+                  for (let child of node.childNodes) {
+                    traverse(child);
+                  }
+              }
+              
+              const end = fullText.length;
+              if (start !== end) {
+                if (node.tagName === 'STRONG' || node.tagName === 'B') {
+                  formatting.push({ type: 'bold', startIndex: start, endIndex: end });
+                } else if (node.tagName === 'EM' || node.tagName === 'I') {
+                  formatting.push({ type: 'italic', startIndex: start, endIndex: end });
+                }
+              }
+              
+              if (isBlock) {
+                if (!fullText.endsWith('\n')) {
+                  fullText += '\n';
+                }
+              }
+            }
+          }
+          traverse(tempDiv);
+          
+          const suffix = "\n\n(Exportado do App Bíblia Sagrada ACF)\n";
+          const combinedText = title + "\n\n" + fullText + suffix;
+          const baseIndex = 1 + title.length + 2; // Offset inicial por causa do título e as duas quebras de linha
+          
+          let requests = [
+            {
+              insertText: {
+                location: { index: 1 },
+                text: combinedText
+              }
+            },
+            {
+              updateTextStyle: {
+                range: {
+                  startIndex: 1,
+                  endIndex: combinedText.length + 1
+                },
+                textStyle: {
+                  fontSize: { magnitude: 11, unit: "PT" },
+                  weightedFontFamily: { fontFamily: "Inter" }
+                },
+                fields: "fontSize,weightedFontFamily"
+              }
+            },
+            {
+              updateTextStyle: {
+                range: {
+                  startIndex: 1,
+                  endIndex: title.length + 1
+                },
+                textStyle: {
+                  fontSize: { magnitude: 18, unit: "PT" },
+                  bold: true
+                },
+                fields: "fontSize,bold"
+              }
+            }
+          ];
+          
+          for (let fmt of formatting) {
+            const reqStart = baseIndex + fmt.startIndex;
+            const reqEnd = baseIndex + fmt.endIndex;
+            
+            if (fmt.type === 'bold') {
+              requests.push({
+                updateTextStyle: {
+                  range: { startIndex: reqStart, endIndex: reqEnd },
+                  textStyle: { bold: true },
+                  fields: "bold"
+                }
+              });
+            } else if (fmt.type === 'italic') {
+              requests.push({
+                updateTextStyle: {
+                  range: { startIndex: reqStart, endIndex: reqEnd },
+                  textStyle: { italic: true },
+                  fields: "italic"
+                }
+              });
+            }
+          }
+
+          // 3. Inserir o texto formatado no documento
+          const insertRes = await fetch(`https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ requests })
+          });
+          
+          if (!insertRes.ok) throw new Error("Falha ao inserir texto no documento");
+          
+          showToast("Documento criado com formatação!");
+          window.open(`https://docs.google.com/document/d/${documentId}/edit`, "_blank");
+
+        } catch (error) {
+          console.error(error);
+          showToast("Erro ao exportar para o Google Docs.");
+        }
+      }
+
+      const elBtnCopyNote = document.getElementById("btn-copy-note");
+      if (elBtnCopyNote) {
+        elBtnCopyNote.addEventListener("click", () => {
+          let text = "";
+          if (elNoteEditor && getComputedStyle(elNoteEditor).display !== "none") {
+            text = elNoteEditor.innerText;
+          } else if (elNoteTextarea) {
+            text = elNoteTextarea.value;
+          }
+          if (!text || text.trim() === "") {
+             showToast("Nada para copiar.");
+             return;
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+             navigator.clipboard.writeText(text).then(() => {
+                showToast("Comentário copiado!");
+             }).catch(() => {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+                showToast("Comentário copiado!");
+             });
+          } else {
+             const ta = document.createElement("textarea");
+             ta.value = text;
+             document.body.appendChild(ta);
+             ta.select();
+             document.execCommand("copy");
+             document.body.removeChild(ta);
+             showToast("Comentário copiado!");
+          }
+        });
+      }
+      
+      
+      const elBtnExportDocs = document.getElementById("btn-export-docs");
+      if (elBtnExportDocs) {
+        elBtnExportDocs.addEventListener("click", () => {
+          let htmlText = "";
+          if (elNoteEditor && getComputedStyle(elNoteEditor).display !== "none") {
+            htmlText = elNoteEditor.innerHTML;
+          } else if (elNoteTextarea) {
+            htmlText = elNoteTextarea.value;
+          }
+          
+          if (!htmlText || htmlText.trim() === "") {
+             showToast("Nada para exportar.");
+             return;
+          }
+          
+          pendingDocsText = htmlText;
+
+          if (!googleTokenClient) {
+            initGoogleDocsClient();
+          }
+          if (googleTokenClient) {
+            googleTokenClient.requestAccessToken();
+          } else {
+             showToast("Serviço Google Docs não disponível no momento.");
+          }
+        });
+      }
+
+      // Fechar a barra de notas se clicar no overlay
+      if (el.sidebarOverlay) {
+        el.sidebarOverlay.addEventListener("click", () => {
+          closeNotesSidebar();
+        });
+      }
+
+      // ---- REDIMENSIONAMENTO INTELIGENTE DA JANELA DE ANOTAÇÕES ----
+      const initNotesResizer = () => {
+        const resizer = document.getElementById("notes-resizer");
+        if (!resizer) return;
+        
+        const savedWidth = localStorage.getItem("acf_notes_width");
+        if (savedWidth) {
+          document.documentElement.style.setProperty("--notes-sidebar-width", savedWidth);
+        }
+        
+        let isDragging = false;
+        let startX = 0;
+        let startWidth = 0;
+        
+        const onPointerDown = (e) => {
+          if (window.innerWidth <= 768) return;
+          isDragging = true;
+          startX = e.clientX;
+          const curWidth = parseInt(getComputedStyle(elNotesSidebar).width, 10) || 420;
+          startWidth = curWidth;
+          
+          document.body.classList.add("is-resizing-notes");
+          resizer.classList.add("dragging");
+          resizer.setPointerCapture(e.pointerId);
+          e.preventDefault();
+        };
+        
+        const onPointerMove = (e) => {
+          if (!isDragging) return;
+          const deltaX = startX - e.clientX;
+          const minW = 280;
+          const maxW = Math.max(minW, Math.min(window.innerWidth * 0.65, window.innerWidth - 340));
+          const newW = Math.max(minW, Math.min(maxW, startWidth + deltaX));
+          
+          document.documentElement.style.setProperty("--notes-sidebar-width", `${newW}px`);
+        };
+        
+        const onPointerUp = (e) => {
+          if (!isDragging) return;
+          isDragging = false;
+          document.body.classList.remove("is-resizing-notes");
+          resizer.classList.remove("dragging");
+          try {
+            resizer.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+          
+          const finalWidth = getComputedStyle(document.documentElement).getPropertyValue("--notes-sidebar-width");
+          if (finalWidth) {
+            localStorage.setItem("acf_notes_width", finalWidth.trim());
+          }
+          if (typeof updateTopVisibleVerseReference === "function") {
+            updateTopVisibleVerseReference();
+          }
+        };
+        
+        resizer.addEventListener("pointerdown", onPointerDown);
+        resizer.addEventListener("pointermove", onPointerMove);
+        resizer.addEventListener("pointerup", onPointerUp);
+        resizer.addEventListener("pointercancel", onPointerUp);
+        
+        // Duplo clique para restaurar o tamanho padrão (420px)
+        resizer.addEventListener("dblclick", () => {
+          document.documentElement.style.setProperty("--notes-sidebar-width", "420px");
+          localStorage.setItem("acf_notes_width", "420px");
+          showToast("Largura de comentários redefinida (420px)");
+        });
+      };
+      initNotesResizer();
+
+      // 7. RENDERIZAÇÃO E ATUALIZAÇÃO DA UI
+      // ------------------------------------------------------------------------
+      function applyTheme(themeName) {
+        state.theme = themeName;
+        el.html.setAttribute("data-theme", themeName);
+        localStorage.setItem("acf_theme", themeName);
+      }
+
+      function applyFontSize(size) {
+        state.fontSize = Math.min(Math.max(size, 14), 32);
+        el.html.style.setProperty("--font-size-base", `${state.fontSize}px`);
+        if (el.fontSizeLabel) el.fontSizeLabel.textContent = `${state.fontSize}px`;
+        localStorage.setItem("acf_font_size", state.fontSize);
+      }
+
+      function applyLineHeight(lh) {
+        state.lineHeight = Math.min(Math.max(lh, 1.2), 3.0);
+        el.html.style.setProperty("--line-height-base", state.lineHeight.toFixed(2));
+        if (el.lineHeightLabel) el.lineHeightLabel.textContent = state.lineHeight.toFixed(2);
+        localStorage.setItem("acf_line_height", state.lineHeight.toFixed(2));
+      }
+
+      function applyFontFamily(family) {
+        state.fontFamily = family;
+        const fontVal = family === "sans"
+          ? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          : '"Georgia", "Merriweather", "Cambria", serif';
+        el.html.style.setProperty("--font-reading", fontVal);
+        localStorage.setItem("acf_font_family", family);
+      }
+
+      function renderLoadingState() {
+        el.verseContainer.innerHTML = `
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p style="font-size: 0.95rem; color: var(--text-secondary);">
+              Carregando texto de ${state.currentBook} ${state.currentChapter} (ACF 2011)...
+            </p>
+          </div>
+        `;
+      }
+
+      
+      // Variáveis Globais de Scroll Contínuo
+      let isFetchingNext = false;
+      let isFetchingPrev = false;
+      let loadedChapters = new Set();
+      let scrollObserver = null;
+      let chapterObserver = null;
+      let scrollRafId = null;
+      let savePosTimer = null;
+
+      function saveReadingPositionDebounced(book, chapter, verse) {
+        clearTimeout(savePosTimer);
+        savePosTimer = setTimeout(() => {
+          localStorage.setItem("acf_current_book", book);
+          localStorage.setItem("acf_current_chapter", chapter);
+          localStorage.setItem("acf_current_verse", verse);
+        }, 500);
+      }
+
+      function updateTopVisibleVerseReference() {
+        const container = document.getElementById('bible-reader');
+        if (!container) return;
+
+        const containerRect = container.getBoundingClientRect();
+        // Linha óptica superior da área de leitura
+        const threshold = containerRect.top + 20;
+
+        const verseEls = container.querySelectorAll('.verse-paragraph');
+        if (!verseEls || verseEls.length === 0) return;
+
+        let topVerse = null;
+
+        for (let i = 0; i < verseEls.length; i++) {
+          const elP = verseEls[i];
+          const rect = elP.getBoundingClientRect();
+          // O primeiro versículo cujo fim está na área de visão (>= threshold) é o primeiro visível do topo
+          if (rect.bottom >= threshold) {
+            topVerse = elP;
+            break;
+          }
+        }
+
+        if (!topVerse) {
+          topVerse = verseEls[verseEls.length - 1];
+        }
+
+        if (topVerse) {
+          const book = topVerse.dataset.book || state.currentBook;
+          const chapter = parseInt(topVerse.dataset.chapter || state.currentChapter, 10);
+          const verse = parseInt(topVerse.dataset.verse || '1', 10);
+          const refString = `${book} ${chapter}:${verse}`;
+
+          state.currentVerse = verse;
+
+          // Atualiza em tempo real o campo do topo (seletor bíblico unificado)
+          if (el.topTriggerCurRef && el.topTriggerCurRef.textContent !== refString) {
+            el.topTriggerCurRef.textContent = refString;
+          }
+
+          // Atualiza em tempo real o indicador do rodapé
+          const footerCurReading = document.getElementById("footer-cur-reading");
+          if (footerCurReading && footerCurReading.textContent !== refString) {
+            footerCurReading.textContent = refString;
+          }
+
+          pickerState.selectedVerse = verse;
+
+          // Se a rolagem contínua mudou de capítulo ou livro
+          if (chapter !== state.currentChapter || book !== state.currentBook) {
+            state.currentChapter = chapter;
+            state.currentBook = book;
+            const bookObj = getBookInfo(book) || BIBLE_BOOKS.find(b => b.name === book);
+            if (bookObj) {
+              if (el.displayBookTitle && el.displayBookTitle.textContent !== bookObj.name) {
+                el.displayBookTitle.textContent = bookObj.name;
+              }
+              if (el.displayChapterTitle) {
+                el.displayChapterTitle.textContent = `Capítulo ${state.currentChapter}`;
+              }
+              if (el.headerCurRef) {
+                el.headerCurRef.textContent = `${bookObj.name} ${state.currentChapter}`;
+              }
+              if (el.tabLabelBook) el.tabLabelBook.textContent = bookObj.name;
+              if (el.tabLabelChapter) el.tabLabelChapter.textContent = `Cap. ${state.currentChapter}`;
+
+              pickerState.selectedBook = bookObj;
+              pickerState.selectedChapter = state.currentChapter;
+
+              const bookIndex = BIBLE_BOOKS.findIndex(b => b.id === bookObj.id);
+              if (el.btnPrevChapter) el.btnPrevChapter.disabled = (state.currentChapter === 1 && bookIndex === 0);
+              if (el.btnNextChapter) el.btnNextChapter.disabled = (state.currentChapter === bookObj.chapters && bookIndex === BIBLE_BOOKS.length - 1);
+
+              if (el.pickerChapterGrid) {
+                const btns = el.pickerChapterGrid.querySelectorAll('.grid-btn');
+                btns.forEach(b => {
+                  if (parseInt(b.textContent, 10) === state.currentChapter) {
+                    b.classList.add('active');
+                  } else {
+                    b.classList.remove('active');
+                  }
+                });
+              }
+            }
+          }
+
+          document.title = `${book} ${chapter}:${verse} - Bíblia Sagrada ACF 2011`;
+          saveReadingPositionDebounced(book, chapter, verse);
+        }
+      }
+
+      function handleReaderScroll() {
+        if (scrollRafId) return;
+        scrollRafId = requestAnimationFrame(() => {
+          scrollRafId = null;
+          updateTopVisibleVerseReference();
+        });
+      }
+
+      function createChapterBlock(bookName, chapterNum, verses, isFirst = false) {
+        const wrap = document.createElement("div");
+        wrap.className = "chapter-wrapper";
+        wrap.dataset.book = bookName;
+        wrap.dataset.chapter = chapterNum;
+        wrap.id = `chapter-wrap-${chapterNum}`;
+        
+        // Estilo inline pra espaçamento
+        wrap.style.paddingTop = isFirst ? "0" : "2rem";
+        wrap.style.marginTop = isFirst ? "0" : "2rem";
+        wrap.style.borderTop = isFirst ? "none" : "1px solid var(--border)";
+
+        // Sempre injetar cabeçalho H2 estruturado
+        const chTitle = document.createElement("h2");
+        chTitle.className = "reading-chapter-title";
+        chTitle.style.fontSize = isFirst ? "2rem" : "1.5rem";
+        chTitle.style.marginBottom = "2rem";
+        chTitle.style.fontWeight = "600";
+        chTitle.textContent = `Capítulo ${chapterNum}`;
+        wrap.appendChild(chTitle);
+
+        verses.forEach((verseText, index) => {
+          const verseNum = index + 1;
+          const p = document.createElement("p");
+          p.className = "verse-paragraph";
+          p.id = `verse-${bookName.toLowerCase().replace(/\s+/g, '-')}-${chapterNum}-${verseNum}`;
+          p.dataset.book = bookName;
+          p.dataset.verse = verseNum;
+          p.dataset.chapter = chapterNum;
+
+          const key = `${bookName}_${chapterNum}_${verseNum}`;
+          if (userNotes && userNotes[key]) {
+            p.classList.add("has-note");
+          }
+          if (state.activeBookmark &&
+              state.activeBookmark.book === bookName &&
+              state.activeBookmark.chapter === chapterNum &&
+              state.activeBookmark.verse === verseNum) {
+            p.classList.add("marked");
+          }
+
+          p.innerHTML = `
+            <span class="verse-num">${verseNum}</span>
+            <span class="verse-text">${escapeHtml(verseText)}</span>
+            <div class="verse-actions-floating">
+              <button class="verse-action-btn copy-btn" title="Copiar versículo com referência">Copiar</button>
+              <button class="verse-action-btn mark-btn" title="Marcar este versículo">Marcar</button>
+              <button class="verse-action-btn note-btn" title="Comentar versículo">Comentar</button>
+            </div>
+          `;
+
+          p.querySelector(".copy-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            copyVerseToClipboard(bookName, chapterNum, verseNum, verseText);
+          });
+          p.querySelector(".mark-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            saveBookmark(bookName, chapterNum, verseNum, verseText);
+          });
+          p.querySelector(".note-btn").addEventListener("click", (e) => {
+            e.stopPropagation();
+            openNotesSidebar(bookName, chapterNum, verseNum, verseText);
+          });
+          p.addEventListener("click", () => {
+            const selection = window.getSelection ? window.getSelection().toString() : "";
+            if (selection && selection.trim().length > 0) return;
+            openNotesSidebar(bookName, chapterNum, verseNum, verseText);
+          });
+
+          wrap.appendChild(p);
+        });
+
+        return wrap;
+      }
+
+      function updateActiveChapterState(bookObj, newChapter, preferredVerse = null) {
+        state.currentChapter = newChapter;
+        state.currentBook = bookObj.name;
+        // Atualiza títulos e breadcrumb
+        if (el.displayBookTitle) el.displayBookTitle.textContent = bookObj.name;
+        if (el.displayChapterTitle) el.displayChapterTitle.textContent = `Capítulo ${state.currentChapter}`;
+        if (el.headerCurRef) el.headerCurRef.textContent = `${bookObj.name} ${state.currentChapter}`;
+        
+        const curV = preferredVerse || (state.targetVerse > 0 ? state.targetVerse : (state.currentVerse || 1));
+        state.currentVerse = curV;
+        document.title = `${bookObj.name} ${state.currentChapter}:${curV} - Bíblia Sagrada ACF 2011`;
+        
+        if (el.topTriggerCurRef) el.topTriggerCurRef.textContent = `${bookObj.name} ${state.currentChapter}:${curV}`;
+        if (el.tabLabelBook) el.tabLabelBook.textContent = bookObj.name;
+        if (el.tabLabelChapter) el.tabLabelChapter.textContent = `Cap. ${state.currentChapter}`;
+        
+        pickerState.selectedBook = bookObj;
+        pickerState.selectedChapter = state.currentChapter;
+        pickerState.selectedVerse = curV;
+        
+        const footerCurReading = document.getElementById("footer-cur-reading");
+        if (footerCurReading) footerCurReading.textContent = `${bookObj.name} ${state.currentChapter}:${curV}`;
+        
+        const bookIndex = BIBLE_BOOKS.findIndex(b => b.id === bookObj.id);
+        if (el.btnPrevChapter) el.btnPrevChapter.disabled = (state.currentChapter === 1 && bookIndex === 0);
+        if (el.btnNextChapter) el.btnNextChapter.disabled = (state.currentChapter === bookObj.chapters && bookIndex === BIBLE_BOOKS.length - 1);
+        
+        localStorage.setItem("acf_current_chapter", state.currentChapter);
+        
+        if (el.pickerChapterGrid) {
+          const btns = el.pickerChapterGrid.querySelectorAll('.grid-btn');
+          btns.forEach(b => {
+            if (parseInt(b.textContent, 10) === state.currentChapter) {
+              b.classList.add('active');
+            } else {
+              b.classList.remove('active');
+            }
+          });
+        }
+      }
+
+      function initScrollObservers() {
+        if (scrollObserver) scrollObserver.disconnect();
+        if (chapterObserver) chapterObserver.disconnect();
+        
+        scrollObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              if (entry.target.id === 'sentinel-bottom') {
+                loadNextChapterScroll();
+              } else if (entry.target.id === 'sentinel-top') {
+                loadPrevChapterScroll();
+              }
+            }
+          });
+        }, { root: document.getElementById('bible-reader'), rootMargin: "800px" });
+
+        chapterObserver = new IntersectionObserver((entries) => {
+          let visibleChapters = [];
+          entries.forEach(entry => {
+             if (entry.isIntersecting) {
+                visibleChapters.push(entry);
+             }
+          });
+          
+          if (visibleChapters.length > 0) {
+            // Find the chapter taking up the most space or the topmost one
+            const best = visibleChapters.reduce((prev, curr) => (curr.intersectionRatio > prev.intersectionRatio) ? curr : prev);
+            const bookObj = getBookInfo(state.currentBook) || BIBLE_BOOKS[18];
+            const chap = parseInt(best.target.dataset.chapter, 10);
+            if (chap && chap !== state.currentChapter) {
+               updateActiveChapterState(bookObj, chap, state.currentVerse);
+               updateTopVisibleVerseReference();
+            }
+          }
+        }, { root: document.getElementById('bible-reader'), rootMargin: "-40% 0px -40% 0px", threshold: [0, 0.1, 0.5, 0.9, 1] });
+      }
+
+      async function loadNextChapterScroll() {
+        if (isFetchingNext) return;
+        const bookObj = getBookInfo(state.currentBook) || BIBLE_BOOKS[18];
+        
+        const maxRendered = Math.max(...Array.from(loadedChapters));
+        if (maxRendered >= bookObj.chapters) return; 
+        
+        const nextChap = maxRendered + 1;
+        isFetchingNext = true;
+        
+        try {
+          const verses = await loadChapterVerses(bookObj.name, nextChap, true);
+          if (!verses) {
+            setTimeout(() => {
+              isFetchingNext = false;
+              const bottomSentinel = document.getElementById("sentinel-bottom");
+              if (scrollObserver && bottomSentinel) {
+                scrollObserver.unobserve(bottomSentinel);
+                scrollObserver.observe(bottomSentinel);
+              }
+            }, 2000);
+            return;
+          }
+          loadedChapters.add(nextChap);
+          
+          const wrap = createChapterBlock(bookObj.name, nextChap, verses, false);
+          
+          const bottomSentinel = document.getElementById("sentinel-bottom");
+          if (bottomSentinel) {
+            el.verseContainer.insertBefore(wrap, bottomSentinel);
+          } else {
+            el.verseContainer.appendChild(wrap);
+          }
+          
+          chapterObserver.observe(wrap);
+          if (scrollObserver && bottomSentinel) {
+            scrollObserver.unobserve(bottomSentinel);
+            scrollObserver.observe(bottomSentinel);
+          }
+          
+          if (elNotesSidebar && elNotesSidebar.classList.contains("open")) {
+            appendNotesChapterToFeed(bookObj.name, nextChap, false);
+          }
+        } catch (e) {
+          console.error("Erro ao carregar próximo capítulo:", e);
+        } finally {
+          isFetchingNext = false;
+        }
+      }
+
+      async function loadPrevChapterScroll() {
+        if (isFetchingPrev) return;
+        const bookObj = getBookInfo(state.currentBook) || BIBLE_BOOKS[18];
+        
+        const minRendered = Math.min(...Array.from(loadedChapters));
+        if (minRendered <= 1) return; 
+        
+        const prevChap = minRendered - 1;
+        isFetchingPrev = true;
+        
+        try {
+          const verses = await loadChapterVerses(bookObj.name, prevChap, true);
+          if (!verses) {
+            setTimeout(() => {
+              isFetchingPrev = false;
+              const topSentinel = document.getElementById("sentinel-top");
+              if (scrollObserver && topSentinel) {
+                scrollObserver.unobserve(topSentinel);
+                scrollObserver.observe(topSentinel);
+              }
+            }, 2000);
+            return;
+          }
+          loadedChapters.add(prevChap);
+          
+          const wrap = createChapterBlock(bookObj.name, prevChap, verses, false);
+          
+          const scrollContainer = document.getElementById('bible-reader');
+          const oldScrollHeight = scrollContainer.scrollHeight;
+          const oldScrollTop = scrollContainer.scrollTop;
+          
+          const topSentinel = document.getElementById("sentinel-top");
+          if (topSentinel && topSentinel.nextSibling) {
+            el.verseContainer.insertBefore(wrap, topSentinel.nextSibling);
+          } else {
+            el.verseContainer.prepend(wrap);
+          }
+          
+          chapterObserver.observe(wrap);
+          if (scrollObserver && topSentinel) {
+            scrollObserver.unobserve(topSentinel);
+            scrollObserver.observe(topSentinel);
+          }
+          
+          // Compensar rolagem
+          const newScrollHeight = scrollContainer.scrollHeight;
+          const diff = newScrollHeight - oldScrollHeight;
+          scrollContainer.scrollTo({ top: oldScrollTop + diff, behavior: 'instant' });
+          
+          if (elNotesSidebar && elNotesSidebar.classList.contains("open")) {
+            appendNotesChapterToFeed(bookObj.name, prevChap, true);
+          }
+        } catch (e) {
+          console.error("Erro ao carregar capítulo anterior:", e);
+        } finally {
+          isFetchingPrev = false;
+        }
+      }
+
+      async function renderCurrentChapter() {
+        const bookObj = getBookInfo(state.currentBook) || BIBLE_BOOKS[18]; // Default Salmos
+        state.currentBook = bookObj.name;
+
+        // Limita capítulo válido
+        if (state.currentChapter < 1) state.currentChapter = 1;
+        if (state.currentChapter > bookObj.chapters) state.currentChapter = bookObj.chapters;
+
+        loadedChapters.clear();
+        loadedChapters.add(state.currentChapter);
+        
+        updateActiveChapterState(bookObj, state.currentChapter);
+        
+        // Atualiza seletores no sidebar
+        renderSidebarChapterPicker(bookObj);
+        highlightActiveBookInSidebar(bookObj.id);
+
+        // Busca versículos
+        const verses = await loadChapterVerses(bookObj.name, state.currentChapter);
+
+        // Renderiza lista de versículos
+        el.verseContainer.innerHTML = `
+          <div id="sentinel-top" class="scroll-sentinel" style="height: 1px; width: 100%;"></div>
+          <div id="sentinel-bottom" class="scroll-sentinel" style="height: 1px; width: 100%;"></div>
+        `;
+        
+        const wrap = createChapterBlock(bookObj.name, state.currentChapter, verses, true);
+        const bottomSentinel = document.getElementById("sentinel-bottom");
+        el.verseContainer.insertBefore(wrap, bottomSentinel);
+
+        initScrollObservers();
+        const topSentinel = document.getElementById("sentinel-top");
+        if (scrollObserver) {
+          scrollObserver.observe(topSentinel);
+          scrollObserver.observe(bottomSentinel);
+        }
+        if (chapterObserver) {
+          chapterObserver.observe(wrap);
+        }
+
+        // Salva histórico de leitura
+        addToHistory(bookObj.name, state.currentChapter);
+
+        // Persistência no LocalStorage
+        localStorage.setItem("acf_current_book", bookObj.name);
+        localStorage.setItem("acf_current_chapter", state.currentChapter);
+
+        // Rolagem suave para versículo alvo caso solicitado
+        if (state.targetVerse > 0) {
+          requestAnimationFrame(() => {
+          setTimeout(() => {
+            const formattedBook = state.currentBook.toLowerCase().replace(/\s+/g, '-');
+            const targetEl = document.getElementById(`verse-${formattedBook}-${state.currentChapter}-${state.targetVerse}`);
+            if (targetEl) {
+              if (window.innerWidth >= 768) {
+                if (state.openNoteForTarget) {
+                  const textSpan = targetEl.querySelector(".verse-text");
+                  const vText = textSpan ? textSpan.textContent : "";
+                  // Abre a aba no Desktop/Tablet
+                  openNotesSidebar(state.currentBook, state.currentChapter, state.targetVerse, vText);
+                }
+                
+                setTimeout(() => {
+                   targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                   targetEl.classList.add("highlight-target");
+                }, state.openNoteForTarget ? 350 : 50);
+                
+              } else {
+                // No celular, fecha qualquer sidebar que esteja aberta e rola para o topo
+                closeNotesSidebar();
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                targetEl.classList.add("highlight-target");
+              }
+            }
+            
+            state.openNoteForTarget = false;
+            // Força o carregamento do próximo capítulo para garantir que "todos os seguintes" existam 
+            // no DOM, evitando que a rolagem trave no rodapé se o versículo for o último do capítulo.
+            setTimeout(loadNextChapterScroll, 300);
+
+            state.targetVerse = 0;
+            setTimeout(updateTopVisibleVerseReference, 350);
+          });
+          }, 400);
+        } else {
+          const scrollContainer = document.getElementById('bible-reader');
+          if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+          setTimeout(updateTopVisibleVerseReference, 150);
+        }
+      }
+
+      function escapeHtml(str) {
+        return (str || "").replace(/[&<>"']/g, function (m) {
+          switch (m) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#039;';
+            default: return m;
+          }
+        });
+      }
+
+      // ------------------------------------------------------------------------
+      // 8. NAVEGAÇÃO DE CAPÍTULOS E LIVROS
+      // ------------------------------------------------------------------------
+      function navigateChapter(delta) {
+        const bookObj = getBookInfo(state.currentBook) || BIBLE_BOOKS[0];
+        const bookIndex = BIBLE_BOOKS.findIndex(b => b.id === bookObj.id);
+
+        let newChapter = state.currentChapter + delta;
+
+        if (newChapter > bookObj.chapters) {
+          // Passa para o próximo livro
+          if (bookIndex < BIBLE_BOOKS.length - 1) {
+            state.currentBook = BIBLE_BOOKS[bookIndex + 1].name;
+            state.currentChapter = 1;
+            renderCurrentChapter();
+          }
+        } else if (newChapter < 1) {
+          // Volta para o livro anterior
+          if (bookIndex > 0) {
+            const prevBook = BIBLE_BOOKS[bookIndex - 1];
+            state.currentBook = prevBook.name;
+            state.currentChapter = prevBook.chapters;
+            renderCurrentChapter();
+          }
+        } else {
+          state.currentChapter = newChapter;
+          renderCurrentChapter();
+        }
+      }
+
+      function selectBook(bookName) {
+        state.currentBook = bookName;
+        state.currentChapter = 1;
+        state.targetVerse = 0;
+        renderCurrentChapter();
+      }
+
+      // ------------------------------------------------------------------------
+      // 9. SIDEBAR: LIVROS E SELETOR DE CAPÍTULOS
+      // ------------------------------------------------------------------------
+      let currentTestamentFilter = "todos";
+
+      function renderSidebarBooks(filterQuery = "") {
+        const query = filterQuery.toLowerCase().trim();
+        el.booksList.innerHTML = "";
+        const frag = document.createDocumentFragment();
+
+        const filtered = BIBLE_BOOKS.filter(b => {
+          const matchTestament = (currentTestamentFilter === "todos") || (b.testament === currentTestamentFilter);
+          const matchQuery = !query || b.name.toLowerCase().includes(query) || b.abbrev.toLowerCase().includes(query);
+          return matchTestament && matchQuery;
+        });
+
+        filtered.forEach(book => {
+          const btn = document.createElement("button");
+          btn.className = `book-item-btn ${book.name === state.currentBook ? "active" : ""}`;
+          btn.dataset.bookId = book.id;
+          btn.dataset.bookName = book.name;
+          btn.innerHTML = `
+            <span>${book.name}</span>
+            <span class="book-chapters-badge">${book.chapters} cap</span>
+          `;
+          btn.addEventListener("click", () => {
+            selectBook(book.name);
+            // Em telas menores, fecha o sidebar após selecionar
+            if (window.innerWidth <= 900) {
+              closeSidebar();
+            }
+          });
+          frag.appendChild(btn);
+        });
+
+        el.booksList.appendChild(frag);
+      }
+
+      function highlightActiveBookInSidebar(bookId) {
+        const allBtns = el.booksList.querySelectorAll(".book-item-btn");
+        allBtns.forEach(b => {
+          b.classList.toggle("active", b.dataset.bookId === bookId);
+        });
+      }
+
+      function renderSidebarChapterPicker(bookObj) {
+        el.pickerBookName.textContent = bookObj.name;
+        el.pickerChapterGrid.innerHTML = "";
+        const frag = document.createDocumentFragment();
+
+        for (let i = 1; i <= bookObj.chapters; i++) {
+          const btn = document.createElement("button");
+          btn.className = `grid-btn ${i === state.currentChapter ? "active" : ""}`;
+          btn.textContent = i;
+          btn.addEventListener("click", () => {
+            state.currentChapter = i;
+            state.targetVerse = 0;
+            renderCurrentChapter();
+            if (window.innerWidth <= 900) {
+              closeSidebar();
+            }
+          });
+          frag.appendChild(btn);
+        }
+
+        el.pickerChapterGrid.appendChild(frag);
+      }
+
+      function toggleSidebar() {
+        el.sidebar.classList.toggle("open");
+        el.sidebarOverlay.classList.toggle("active");
+      }
+
+      function closeSidebar() {
+        el.sidebar.classList.remove("open");
+        el.sidebarOverlay.classList.remove("active");
+      }
+
+      // ------------------------------------------------------------------------
+      // 9.1 SELETOR UNIFICADO NO TOPO (LIVRO -> CAPÍTULO -> VERSÍCULO)
+      // ------------------------------------------------------------------------
+      const pickerState = {
+        selectedBook: null,
+        selectedChapter: 1,
+        selectedVerse: 1,
+        activeStep: 1, // 1: Livro, 2: Capítulo, 3: Versículo
+        testamentFilter: "todos",
+        searchQuery: ""
+      };
+
+      function openTopPicker(step = 1) {
+        const curBookObj = getBookInfo(state.currentBook) || BIBLE_BOOKS[18];
+        pickerState.selectedBook = curBookObj;
+        pickerState.selectedChapter = state.currentChapter || 1;
+        pickerState.selectedVerse = state.currentVerse || state.targetVerse || 1;
+
+        if (el.topSelector) el.topSelector.classList.add("active");
+        if (el.topPickerDropdown) el.topPickerDropdown.classList.add("open");
+        if (el.topPickerBackdrop) el.topPickerBackdrop.classList.add("active");
+
+        goToPickerStep(step);
+      }
+
+      function closeTopPicker() {
+        if (el.topSelector) el.topSelector.classList.remove("active");
+        if (el.topPickerDropdown) el.topPickerDropdown.classList.remove("open");
+        if (el.topPickerBackdrop) el.topPickerBackdrop.classList.remove("active");
+      }
+
+      function toggleTopPicker() {
+        const isOpen = el.topPickerDropdown && el.topPickerDropdown.classList.contains("open");
+        if (isOpen) {
+          closeTopPicker();
+        } else {
+          openTopPicker(1);
+        }
+      }
+
+      function goToPickerStep(step) {
+        pickerState.activeStep = step;
+
+        const bookObj = pickerState.selectedBook || getBookInfo(state.currentBook) || BIBLE_BOOKS[0];
+
+        if (el.appHeaderTitle) {
+          if (step === 1) {
+            el.appHeaderTitle.textContent = "Selecionar Livro";
+          } else if (step === 2) {
+            el.appHeaderTitle.textContent = bookObj.name;
+          } else if (step === 3) {
+            el.appHeaderTitle.textContent = `${bookObj.name} ${pickerState.selectedChapter}`;
+          }
+        }
+
+        // Atualiza visualizações dos passos
+        if (el.viewStep1) el.viewStep1.classList.toggle("active", step === 1);
+        if (el.viewStep2) el.viewStep2.classList.toggle("active", step === 2);
+        if (el.viewStep3) el.viewStep3.classList.toggle("active", step === 3);
+
+        // Renderiza conteúdo de acordo com o passo atual
+        if (step === 1) {
+          renderTopBooksList();
+        } else if (step === 2) {
+          renderTopChaptersGrid(bookObj);
+        } else if (step === 3) {
+          renderTopVersesGrid(bookObj, pickerState.selectedChapter);
+        }
+      }
+
+      function getBookColorClass(index) {
+        if (index >= 0 && index <= 4) return "book-color-pentateuch";
+        if (index >= 5 && index <= 16) return "book-color-history";
+        if (index >= 17 && index <= 21) return "book-color-poetry";
+        if (index >= 22 && index <= 26) return "book-color-major";
+        if (index >= 27 && index <= 38) return "book-color-minor";
+        if (index >= 39 && index <= 42) return "book-color-gospels";
+        if (index === 43) return "book-color-acts";
+        if (index >= 44 && index <= 57) return "book-color-pauline";
+        if (index >= 58 && index <= 64) return "book-color-general";
+        if (index === 65) return "book-color-rev";
+        return "";
+      }
+
+      function renderTopBooksList() {
+        if (!el.topBooksGrid) return;
+        el.topBooksGrid.innerHTML = "";
+        const frag = document.createDocumentFragment();
+
+        const booksWithNotes = new Set();
+        if (userNotes) {
+          Object.keys(userNotes).forEach(key => {
+            const rawNote = userNotes[key];
+            const textContent = (rawNote || "").replace(/<[^>]*>?/gm, '').trim();
+            if (textContent !== "") {
+               const match = key.match(/^(.*)_(\d+)_(\d+)$/);
+               if (match) booksWithNotes.add(match[1]);
+            }
+          });
+        }
+
+
+        BIBLE_BOOKS.forEach((book, index) => {
+          const btn = document.createElement("button");
+          const isSelected = pickerState.selectedBook && pickerState.selectedBook.id === book.id;
+          const colorClass = getBookColorClass(index);
+          
+          btn.className = `top-book-item-btn ${colorClass} ${isSelected ? "selected" : ""} ${booksWithNotes.has(book.name) ? "has-notes-indicator" : ""}`.trim();
+          btn.dataset.bookId = book.id;
+          btn.textContent = book.abbrev.toUpperCase();
+          btn.title = book.name; // Tooltip com nome completo
+          
+          btn.addEventListener("click", () => {
+            pickerState.selectedBook = book;
+            pickerState.selectedChapter = 1;
+            pickerState.selectedVerse = 1;
+            // Avança imediatamente para o Passo 2: Capítulo
+            goToPickerStep(2);
+          });
+          frag.appendChild(btn);
+        });
+
+        el.topBooksGrid.appendChild(frag);
+      }
+
+      function renderTopChaptersGrid(bookObj) {
+        if (!el.topChaptersGrid) return;
+        if (el.currentChosenBookName) {
+          el.currentChosenBookName.textContent = bookObj.name;
+        }
+
+        el.topChaptersGrid.innerHTML = "";
+        const frag = document.createDocumentFragment();
+        
+        // Descobre quais capítulos deste livro têm notas
+        const chaptersWithNotes = new Set();
+        if (userNotes) {
+          Object.keys(userNotes).forEach(key => {
+            const rawNote = userNotes[key];
+            const textContent = (rawNote || "").replace(/<[^>]*>?/gm, '').trim();
+            if (textContent !== "") {
+               const match = key.match(/^(.*)_(\d+)_(\d+)$/);
+               if (match && match[1] === bookObj.name) {
+                 chaptersWithNotes.add(parseInt(match[2], 10));
+               }
+            }
+          });
+        }
+
+        for (let i = 1; i <= bookObj.chapters; i++) {
+          const btn = document.createElement("button");
+          const isSelected = (i === pickerState.selectedChapter);
+          btn.className = `top-number-btn ${isSelected ? "selected" : ""} ${chaptersWithNotes.has(i) ? "has-notes-indicator" : ""}`.trim();
+          
+          const vCount = getVerseCountForChapter(bookObj, i);
+          btn.innerHTML = `
+            <span class="ch-num">${i}</span>
+            <span class="ch-vcount">${vCount}</span>
+          `;
+          
+          btn.addEventListener("click", () => {
+            pickerState.selectedChapter = i;
+            pickerState.selectedVerse = 1;
+            // Avança imediatamente para o Passo 3: Versículo
+            goToPickerStep(3);
+          });
+          frag.appendChild(btn);
+        }
+
+        el.topChaptersGrid.appendChild(frag);
+      }
+
+      function renderTopVersesGrid(bookObj, chapterNum) {
+        if (!el.topVersesGrid) return;
+        if (el.currentChosenBookChapName) {
+          el.currentChosenBookChapName.textContent = `${bookObj.name} ${chapterNum}`;
+        }
+
+        const totalVerses = getVerseCountForChapter(bookObj, chapterNum);
+
+        if (el.directVerseInput) {
+          el.directVerseInput.max = totalVerses;
+          el.directVerseInput.placeholder = `1 a ${totalVerses}`;
+        }
+
+        el.topVersesGrid.innerHTML = "";
+        const frag = document.createDocumentFragment();
+        
+        // Descobre quais versículos deste capítulo têm notas
+        const versesWithNotes = new Set();
+        if (userNotes) {
+          Object.keys(userNotes).forEach(key => {
+            const rawNote = userNotes[key];
+            const textContent = (rawNote || "").replace(/<[^>]*>?/gm, '').trim();
+            if (textContent !== "") {
+               const match = key.match(/^(.*)_(\d+)_(\d+)$/);
+               if (match && match[1] === bookObj.name && parseInt(match[2], 10) === chapterNum) {
+                 versesWithNotes.add(parseInt(match[3], 10));
+               }
+            }
+          });
+        }
+
+        for (let v = 1; v <= totalVerses; v++) {
+          const btn = document.createElement("button");
+          const isSelected = (v === pickerState.selectedVerse);
+          btn.className = `top-number-btn ${isSelected ? "selected" : ""} ${versesWithNotes.has(v) ? "has-notes-indicator" : ""}`.trim();
+          btn.textContent = v;
+          btn.addEventListener("click", () => {
+            pickerState.selectedVerse = v;
+            applySelectionAndNavigate(bookObj.name, chapterNum, v);
+          });
+          frag.appendChild(btn);
+        }
+
+        el.topVersesGrid.appendChild(frag);
+
+        setTimeout(() => {
+          const selBtn = el.topVersesGrid.querySelector(".top-number-btn.selected");
+          if (selBtn) selBtn.scrollIntoView({ block: "nearest" });
+        }, 50);
+      }
+
+      function applySelectionAndNavigate(bookName, chapterNum, verseNum) {
+        closeTopPicker();
+        state.currentBook = bookName;
+        state.currentChapter = chapterNum;
+        state.currentVerse = verseNum || 1;
+        state.targetVerse = verseNum || 1;
+        state.openNoteForTarget = true; // Flag para abrir a janela de notas no desktop
+        renderCurrentChapter();
+        showToast(`Indo para ${bookName} ${chapterNum}:${verseNum || 1}`);
+      }
+
+      function initTopPickerListeners() {
+        // Trigger de abertura no topo
+        if (el.btnTopTrigger) {
+          el.btnTopTrigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleTopPicker();
+          });
+        }
+
+        // Backdrop
+        if (el.topPickerBackdrop) {
+          el.topPickerBackdrop.addEventListener("click", () => {
+            closeTopPicker();
+          });
+        }
+
+        // Botão voltar do cabeçalho
+        if (el.btnAppBack) {
+          el.btnAppBack.addEventListener("click", () => {
+            if (pickerState.activeStep === 3) {
+              goToPickerStep(2);
+            } else if (pickerState.activeStep === 2) {
+              goToPickerStep(1);
+            } else {
+              closeTopPicker();
+            }
+          });
+        }
+
+        // Fechar com tecla ESC
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            if (el.topPickerDropdown && el.topPickerDropdown.classList.contains("open")) {
+              closeTopPicker();
+            }
+          }
+        });
+      }
+
+      // ------------------------------------------------------------------------
+      // 10. MARCADORES, HISTÓRICO E COMPARTILHAMENTO
+      // ------------------------------------------------------------------------
+      function saveBookmark(book, chapter, verse, text) {
+        state.activeBookmark = { book, chapter, verse, text, date: new Date().toISOString() };
+        localStorage.setItem("acf_bookmark", JSON.stringify(state.activeBookmark));
+        showToast(`Marcador salvo: ${book} ${chapter}:${verse}`);
+        updateBookmarkUI();
+
+        const footerCurReading = document.getElementById("footer-cur-reading");
+        if (footerCurReading) {
+          footerCurReading.textContent = `${book} ${chapter}:${verse}`;
+        }
+
+        // Atualiza classe no DOM
+        document.querySelectorAll(".verse-paragraph").forEach(elP => {
+          const vNum = parseInt(elP.dataset.verse, 10);
+          elP.classList.toggle("marked", vNum === verse);
+        });
+      }
+
+      function addToHistory(book, chapter) {
+        const item = { book, chapter, date: new Date().toISOString() };
+        // Remove duplicados recentes
+        state.history = state.history.filter(h => !(h.book === book && h.chapter === chapter));
+        state.history.unshift(item);
+        if (state.history.length > 20) state.history.pop();
+        localStorage.setItem("acf_history", JSON.stringify(state.history));
+      }
+
+      function copyVerseToClipboard(book, chapter, verse, text) {
+        const citation = `"${text.trim()}" — ${book} ${chapter}:${verse} (Almeida Corrigida Fiel - ACF 2011)`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(citation).then(() => {
+            showToast("Versículo copiado com sucesso!");
+          }).catch(() => {
+            fallbackCopy(citation);
+          });
+        } else {
+          fallbackCopy(citation);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showToast("Versículo copiado!");
+      }
+
+      function updateBookmarkUI() {
+        if (!el.activeBookmarkBox) return;
+        
+        const btnClearBookmark = document.getElementById("btn-clear-bookmark");
+        const btnClearHistory = document.getElementById("btn-clear-history");
+
+        if (!state.activeBookmark) {
+          el.activeBookmarkBox.innerHTML = "<p style='color:var(--text-muted); font-size:0.85rem;'>Nenhum marcador registrado ainda.</p>";
+          if (btnClearBookmark) btnClearBookmark.style.display = 'none';
+        } else {
+          if (btnClearBookmark) btnClearBookmark.style.display = 'inline-block';
+          const b = state.activeBookmark;
+          el.activeBookmarkBox.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+              <strong style="color:var(--accent); font-size:0.95rem;">${b.book} ${b.chapter}:${b.verse}</strong>
+              <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.date).toLocaleDateString()}</span>
+            </div>
+            <p style="font-family:var(--font-reading); font-size:0.9rem; color:var(--text-primary); margin-bottom:0.5rem;">
+              "${escapeHtml(b.text || '')}"
+            </p>
+            <button class="btn-text-nav" id="btn-jump-active-bookmark" style="font-size:0.8rem; padding:0.3rem 0.6rem;">
+              Ir para este versículo
+            </button>
+          `;
+          const jumpBtn = document.getElementById("btn-jump-active-bookmark");
+          if (jumpBtn) {
+            jumpBtn.addEventListener("click", () => {
+              closeModal("modal-bookmarks");
+              state.currentBook = b.book;
+              state.currentChapter = b.chapter;
+              state.targetVerse = b.verse;
+              renderCurrentChapter();
+            });
+          }
+        }
+
+        // Histórico
+        el.historyListBox.innerHTML = "";
+        if (state.history.length === 0) {
+          el.historyListBox.innerHTML = "<p style='color:var(--text-muted); font-size:0.85rem;'>Histórico vazio.</p>";
+          if (btnClearHistory) btnClearHistory.style.display = 'none';
+        } else {
+          if (btnClearHistory) btnClearHistory.style.display = 'inline-block';
+          state.history.forEach((h, index) => {
+            const div = document.createElement("div");
+            div.className = "search-result-item";
+            div.style.position = "relative";
+            div.innerHTML = `
+              <div class="search-res-ref">${h.book} ${h.chapter}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">Lido em ${new Date(h.date).toLocaleString()}</div>
+              <button class="btn-delete-history" data-index="${index}" onclick="window.deleteHistoryItem(${index}, event)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--border); border: none; color: var(--text-primary); cursor: pointer; font-size: 1.2rem; padding: 4px 8px; border-radius: 4px; z-index: 10;" title="Remover histórico" aria-label="Remover">
+                &times;
+              </button>
+            `;
+            div.addEventListener("click", (e) => {
+              if (e.target.closest('.btn-delete-history')) {
+                return;
+              }
+              closeModal("modal-bookmarks");
+              state.currentBook = h.book;
+              state.currentChapter = h.chapter;
+              state.targetVerse = 0;
+              renderCurrentChapter();
+            });
+            el.historyListBox.appendChild(div);
+          });
+        }
+      }
+
+      // ------------------------------------------------------------------------
+      // 11. BUSCA INTELIGENTE (REFERÊNCIAS DIRETAS E TERMOS-CHAVE)
+      // ------------------------------------------------------------------------
+      const REF_REGEX = /^([0-9]?\s*[a-zA-ZÀ-ÿ]+)\s*([0-9]+)(?:[:,\s]+([0-9]+))?$/i;
+
+      function parseBibleReference(input) {
+        const match = input.trim().match(REF_REGEX);
+        if (!match) return null;
+        const bookNameRaw = match[1].trim();
+        const chapterNum = parseInt(match[2], 10);
+        const verseNum = match[3] ? parseInt(match[3], 10) : 0;
+
+        const bookObj = getBookInfo(bookNameRaw);
+        if (bookObj && chapterNum >= 1 && chapterNum <= bookObj.chapters) {
+          return {
+            book: bookObj.name,
+            chapter: chapterNum,
+            verse: verseNum
+          };
+        }
+        return null;
+      }
+
+      async function performSearch(query) {
+        const q = query.trim();
+        if (!q) {
+          el.searchResultsBox.innerHTML = "";
+          el.searchFeedback.textContent = "Digite uma referência ou termo";
+          el.searchCount.textContent = "";
+          return;
+        }
+
+        // 1. Verificação se é uma referência direta (Ex: "Salmos 23:1" ou "João 3:16")
+        const directRef = parseBibleReference(q);
+        if (directRef) {
+          el.searchFeedback.textContent = "Referência direta identificada:";
+          el.searchCount.textContent = "1 resultado";
+          el.searchResultsBox.innerHTML = `
+            <div class="search-result-item" id="search-direct-jump">
+              <div class="search-res-ref">${directRef.book} ${directRef.chapter}${directRef.verse ? `:${directRef.verse}` : ""} (ACF 2011)</div>
+              <div class="search-res-text">Clique para abrir diretamente este capítulo ${directRef.verse ? `no versículo ${directRef.verse}` : ""}.</div>
+            </div>
+          `;
+          document.getElementById("search-direct-jump").addEventListener("click", () => {
+            closeModal("modal-search");
+            state.currentBook = directRef.book;
+            state.currentChapter = directRef.chapter;
+            state.targetVerse = directRef.verse;
+            renderCurrentChapter();
+          });
+          return;
+        }
+
+        // 2. Busca por palavra-chave
+        if (q.length < 3) {
+          el.searchFeedback.textContent = "Digite pelo menos 3 caracteres para buscar por texto";
+          el.searchCount.textContent = "";
+          el.searchResultsBox.innerHTML = "";
+          return;
+        }
+
+        el.searchFeedback.textContent = "Buscando nos textos disponíveis...";
+        el.searchCount.textContent = "";
+
+        const results = [];
+        const lowerQ = q.toLowerCase();
+
+        // Se tiver a Bíblia completa em memória
+        if (state.fullBibleData) {
+          for (const book of state.fullBibleData) {
+            const bName = book.name || getBookInfo(book.abbrev)?.name || book.abbrev;
+            if (!book.chapters) continue;
+            for (let cIdx = 0; cIdx < book.chapters.length; cIdx++) {
+              const chapter = book.chapters[cIdx];
+              for (let vIdx = 0; vIdx < chapter.length; vIdx++) {
+                const text = chapter[vIdx];
+                if (text.toLowerCase().includes(lowerQ)) {
+                  results.push({
+                    book: bName,
+                    chapter: cIdx + 1,
+                    verse: vIdx + 1,
+                    text: text
+                  });
+                  if (results.length >= 50) break; // Limite de resultados para alta performance
+                }
+              }
+              if (results.length >= 50) break;
+            }
+            if (results.length >= 50) break;
+          }
+        } else {
+          // Busca nos capítulos pré-carregados e no capítulo atual
+          for (const [key, verses] of Object.entries(PRELOADED_ACF)) {
+            const [bName, cNum] = key.split("_");
+            verses.forEach((vText, idx) => {
+              if (vText.toLowerCase().includes(lowerQ)) {
+                results.push({
+                  book: bName,
+                  chapter: parseInt(cNum, 10),
+                  verse: idx + 1,
+                  text: vText
+                });
+              }
+            });
+          }
+        }
+
+        renderSearchResults(results, q);
+      }
+
+      function renderSearchResults(results, query) {
+        el.searchResultsBox.innerHTML = "";
+
+        if (results.length === 0) {
+          el.searchFeedback.textContent = "Nenhum versículo encontrado";
+          el.searchCount.textContent = "0 resultados";
+          el.searchResultsBox.innerHTML = `
+            <div style="text-align:center; padding:2rem 1rem; color:var(--text-muted);">
+              <p>Nenhuma ocorrência encontrada para "<strong>${escapeHtml(query)}</strong>".</p>
+              <p style="font-size:0.8rem; margin-top:0.5rem;">
+                Dica: carregue o arquivo JSON completo da ACF 2011 no Gerenciador de Dados para realizar busca em todos os 66 livros.
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        el.searchFeedback.textContent = "Resultados encontrados:";
+        el.searchCount.textContent = `${results.length} resultado(s)`;
+
+        const regex = new RegExp(`(${escapeRegex(query)})`, "gi");
+        const frag = document.createDocumentFragment();
+
+        results.forEach(res => {
+          const item = document.createElement("div");
+          item.className = "search-result-item";
+          const highlightedText = escapeHtml(res.text).replace(regex, "<mark>$1</mark>");
+
+          item.innerHTML = `
+            <div class="search-res-ref">${res.book} ${res.chapter}:${res.verse} (ACF 2011)</div>
+            <div class="search-res-text">"${highlightedText}"</div>
+          `;
+
+          item.addEventListener("click", () => {
+            closeModal("modal-search");
+            state.currentBook = res.book;
+            state.currentChapter = res.chapter;
+            state.targetVerse = res.verse;
+            renderCurrentChapter();
+          });
+
+          frag.appendChild(item);
+        });
+
+        el.searchResultsBox.appendChild(frag);
+      }
+
+      function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }
+
+      // ------------------------------------------------------------------------
+      // 12. GESTOR DE DADOS OFFLINE (JSON ACF 2011)
+      // ------------------------------------------------------------------------
+      async function handleJsonFile(file) {
+        if (!file) return;
+        showToast("Processando JSON da Bíblia ACF 2011...");
+
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          processLoadedBibleJson(parsed, file.name);
+        } catch (err) {
+          console.error(err);
+          showToast("Erro ao processar o arquivo JSON.");
+        }
+      }
+
+      function processLoadedBibleJson(data, filename = "Arquivo local") {
+        // Normalização flexível do JSON
+        let normalized = null;
+
+        if (Array.isArray(data)) {
+          // Detecta formato marcossancal (livro, capitulo, versiculos)
+          if (data.length > 0 && data[0].livro && data[0].capitulo && data[0].versiculos) {
+            const bookMap = {};
+            normalized = [];
+            for (const entry of data) {
+              if (entry.livro && entry.capitulo && entry.versiculos) {
+                const abbrev = entry.livro;
+                if (!bookMap[abbrev]) {
+                  const bookInfo = getBookInfo(abbrev);
+                  bookMap[abbrev] = { 
+                    name: bookInfo ? bookInfo.name : abbrev, 
+                    abbrev: abbrev, 
+                    chapters: [] 
+                  };
+                  normalized.push(bookMap[abbrev]);
+                }
+                const capIdx = entry.capitulo - 1;
+                while (bookMap[abbrev].chapters.length <= capIdx) {
+                  bookMap[abbrev].chapters.push([]);
+                }
+                // Remove the verse number prefix like "1 ", "2 "
+                bookMap[abbrev].chapters[capIdx] = entry.versiculos.map(v => v.replace(/^\d+\s+/, ''));
+              }
+            }
+          } else {
+            // Formato padrão: [{ abbrev, chapters: [[...]] }]
+            normalized = data.map(item => {
+              const bookInfo = getBookInfo(item.abbrev || item.name);
+              return {
+                name: bookInfo ? bookInfo.name : (item.name || item.abbrev),
+                abbrev: item.abbrev,
+                chapters: item.chapters
+              };
+            });
+          }
+        } else if (data.books && Array.isArray(data.books)) {
+          normalized = data.books;
+        }
+
+        if (normalized && normalized.length > 0) {
+          state.fullBibleData = normalized;
+          state.isFullOffline = true;
+          updateDatasourceStatus(true, `Bíblia ACF 2011 Carregada com sucesso (${normalized.length} livros)!`);
+          showToast(`Sucesso: ${normalized.length} livros carregados em memória!`);
+          renderCurrentChapter();
+        } else {
+          showToast("Formato de JSON não reconhecido.");
+        }
+      }
+
+      async function downloadFullAcfRemote() {
+        el.btnDownloadFullAcf.disabled = true;
+        el.btnDownloadFullAcf.innerHTML = `
+          <div class="spinner" style="width:16px; height:16px; border-width:2px; display:inline-block; vertical-align:middle; margin-right:8px;"></div>
+          Baixando ACF 2011 (~4.5MB)...
+        `;
+
+        try {
+          const response = await fetch("https://raw.githubusercontent.com/marcossancal/Biblias-em-JSON/master/json/biblia-almeida-corrigida-fiel.json");
+          if (!response.ok) throw new Error("Erro ao baixar dados");
+          const json = await response.json();
+          processLoadedBibleJson(json, "pt_acf.json");
+          showToast("ACF 2011 Completa pronta para leitura e busca offline!");
+        } catch (err) {
+          console.error(err);
+          showToast("Falha ao baixar. Use o seletor de arquivos local.");
+        } finally {
+          el.btnDownloadFullAcf.disabled = false;
+          el.btnDownloadFullAcf.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Baixar ACF 2011 Completa para Offline
+          `;
+        }
+      }
+
+      function updateDatasourceStatus(isFull, msg) {
+        if (isFull) {
+          el.statusTitle.textContent = "Status: 100% Offline Ativo";
+          el.statusDesc.textContent = msg || "Todos os 66 livros da ACF 2011 estão disponíveis sem conexão.";
+        }
+      }
+
+      // ------------------------------------------------------------------------
+      // 13. CONTROLE DE MODAIS
+      // ------------------------------------------------------------------------
+      function openModal(modalId) {
+        const m = document.getElementById(modalId);
+        if (m) {
+          m.classList.add("active");
+          if (modalId === "modal-search") {
+            setTimeout(() => el.searchInput.focus(), 150);
+          } else if (modalId === "modal-bookmarks") {
+            updateBookmarkUI();
+          }
+        }
+      }
+
+      function closeModal(modalId) {
+        const m = document.getElementById(modalId);
+        if (m) {
+          m.classList.remove("active");
+          if (modalId === "modal-note-mobile") {
+             const editor = document.getElementById("mobile-note-editor");
+             if (editor) editor.blur();
+          }
+        }
+      }
+
+      // ------------------------------------------------------------------------
+      // 14. EVENT LISTENERS E INICIALIZAÇÃO
+      // ------------------------------------------------------------------------
+      function initEventListeners() {
+        // Toggle Sidebar
+        el.btnToggleSidebar.addEventListener("click", toggleSidebar);
+        el.sidebarOverlay.addEventListener("click", closeSidebar);
+
+        // Voltar ao início / Brand
+        el.brandHome.addEventListener("click", () => {
+          state.currentBook = "Salmos";
+          state.currentChapter = 23;
+          state.targetVerse = 1;
+          renderCurrentChapter();
+        });
+
+        // Abas de Testamento
+        document.querySelectorAll(".testament-tab").forEach(tab => {
+          tab.addEventListener("click", () => {
+            document.querySelectorAll(".testament-tab").forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            currentTestamentFilter = tab.dataset.testament;
+            renderSidebarBooks(el.bookFilterInput.value);
+          });
+        });
+
+        // Filtro de Livros
+        el.bookFilterInput.addEventListener("input", (e) => {
+          renderSidebarBooks(e.target.value);
+        });
+
+        // Navegação de Capítulos
+        el.btnPrevChapter.addEventListener("click", () => navigateChapter(-1));
+        el.btnNextChapter.addEventListener("click", () => navigateChapter(1));
+
+        // Marcar Capítulo Lido
+        el.btnQuickMark.addEventListener("click", () => {
+          saveBookmark(state.currentBook, state.currentChapter, 1, "Início do capítulo");
+        });
+
+        // Abertura de Modais
+        el.btnOpenSearch.addEventListener("click", () => openModal("modal-search"));
+        el.btnOpenFont.addEventListener("click", () => openModal("modal-font"));
+        el.btnOpenBookmarks.addEventListener("click", () => openModal("modal-bookmarks"));
+        el.btnOpenDatasource.addEventListener("click", () => openModal("modal-datasource"));
+
+        const btnClearBookmark = document.getElementById("btn-clear-bookmark");
+        
+        window.clearAllHistory = function(e) {
+          if (e) {
+             e.preventDefault();
+             e.stopPropagation();
+          }
+          if (confirm("Tem certeza que deseja apagar todo o histórico de leitura?")) {
+            state.history = [];
+            localStorage.setItem("acf_history", JSON.stringify(state.history));
+            updateBookmarkUI();
+            showToast("Histórico limpo com sucesso!");
+          }
+        };
+
+        window.clearActiveBookmark = function(e) {
+          if (e) {
+             e.preventDefault();
+             e.stopPropagation();
+          }
+          state.activeBookmark = null;
+          localStorage.removeItem("acf_active_bookmark");
+          updateBookmarkUI();
+          showToast("Marcador excluído!");
+        };
+
+        window.deleteHistoryItem = function(index, e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          state.history.splice(index, 1);
+          localStorage.setItem("acf_history", JSON.stringify(state.history));
+          updateBookmarkUI();
+          showToast("Item removido do histórico.");
+        };
+
+        // Alternância de Tema Rápida
+        el.btnThemeToggle.addEventListener("click", () => {
+          const themes = ["claro", "sepia", "escuro"];
+          const next = themes[(themes.indexOf(state.theme) + 1) % themes.length];
+          applyTheme(next);
+          showToast(`Tema alterado para: ${next.toUpperCase()}`);
+        });
+
+        // Controles de Tema nos botões dedicados
+        document.querySelectorAll("[data-set-theme]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            applyTheme(btn.dataset.setTheme);
+            showToast(`Tema alterado para: ${btn.dataset.setTheme.toUpperCase()}`);
+          });
+        });
+
+        // Controles de Fonte
+        el.btnFontDec.addEventListener("click", () => applyFontSize(state.fontSize - 2));
+        el.btnFontInc.addEventListener("click", () => applyFontSize(state.fontSize + 2));
+        el.btnFontReset.addEventListener("click", () => applyFontSize(18));
+        
+        if (el.btnLineHeightDec) el.btnLineHeightDec.addEventListener("click", () => applyLineHeight(state.lineHeight - 0.15));
+        if (el.btnLineHeightInc) el.btnLineHeightInc.addEventListener("click", () => applyLineHeight(state.lineHeight + 0.15));
+        if (el.btnLineHeightReset) el.btnLineHeightReset.addEventListener("click", () => applyLineHeight(1.75));
+        
+        el.btnFontSerif.addEventListener("click", () => applyFontFamily("serif"));
+        el.btnFontSans.addEventListener("click", () => applyFontFamily("sans"));
+
+        // Fechamento de Modais
+        document.querySelectorAll("[data-close]").forEach(btn => {
+          btn.addEventListener("click", () => closeModal(btn.dataset.close));
+        });
+
+        document.querySelectorAll(".modal-backdrop").forEach(m => {
+          m.addEventListener("click", (e) => {
+            if (e.target === m) closeModal(m.id);
+          });
+        });
+
+        // Busca com Debounce
+        let searchTimeout = null;
+        el.searchInput.addEventListener("input", (e) => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            performSearch(e.target.value);
+          }, 250);
+        });
+
+        el.searchInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            clearTimeout(searchTimeout);
+            performSearch(e.target.value);
+          }
+        });
+
+        // Atalhos de Teclado (Ctrl+K para busca, Esc para fechar modais)
+        window.addEventListener("keydown", (e) => {
+          const active = document.activeElement;
+          const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            openModal("modal-search");
+          } else if (e.key === "Escape") {
+            document.querySelectorAll(".modal-backdrop.active").forEach(m => m.classList.remove("active"));
+            closeSidebar();
+          } else if (e.key === "ArrowLeft" && !isTyping) {
+            navigateChapter(-1);
+          } else if (e.key === "ArrowRight" && !isTyping) {
+            navigateChapter(1);
+          }
+        });
+
+        // Drag & Drop e Upload do JSON
+        el.jsonDropzone.addEventListener("click", () => el.jsonFileInput.click());
+        el.jsonFileInput.addEventListener("change", (e) => {
+          if (e.target.files && e.target.files[0]) {
+            handleJsonFile(e.target.files[0]);
+          }
+        });
+
+        el.jsonDropzone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          el.jsonDropzone.classList.add("dragover");
+        });
+
+        el.jsonDropzone.addEventListener("dragleave", () => {
+          el.jsonDropzone.classList.remove("dragover");
+        });
+
+        el.jsonDropzone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          el.jsonDropzone.classList.remove("dragover");
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleJsonFile(e.dataTransfer.files[0]);
+          }
+        });
+
+        // Botão Baixar ACF 2011 Remota
+        el.btnDownloadFullAcf.addEventListener("click", downloadFullAcfRemote);
+
+        // Monitoramento em tempo real do versículo visível no topo da leitura
+        const scrollContainer = document.getElementById("bible-reader");
+        if (scrollContainer) {
+          scrollContainer.addEventListener("scroll", handleReaderScroll, { passive: true });
+        }
+        window.addEventListener("resize", handleReaderScroll, { passive: true });
+
+        // Inicializa Seletor Unificado do Topo (Livro -> Capítulo -> Versículo)
+        initTopPickerListeners();
+      }
+
+      // ------------------------------------------------------------------------
+      // 16. GLOBAL TOOLTIPS
+      // ------------------------------------------------------------------------
+      function initGlobalTooltips() {
+        const tooltip = document.createElement("div");
+        tooltip.className = "custom-tooltip";
+        document.body.appendChild(tooltip);
+
+        let tooltipTarget = null;
+
+        document.addEventListener("mouseover", (e) => {
+          const target = e.target.closest("[title], [aria-label], [data-tooltip]");
+          if (!target) return;
+          
+          // Ignora inputs e textareas para evitar piscar enquanto o usuário digita
+          if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+          
+          let text = target.getAttribute("data-tooltip") || target.getAttribute("title") || target.getAttribute("aria-label");
+          if (!text) return;
+
+          // Se tiver title, move para data-tooltip para não exibir o tooltip nativo
+          if (target.hasAttribute("title")) {
+            target.setAttribute("data-tooltip", target.getAttribute("title"));
+            target.removeAttribute("title");
+          }
+
+          tooltipTarget = target;
+          tooltip.textContent = text;
+          
+          // Exibe para medir
+          tooltip.classList.add("visible");
+          
+          // Posicionamento
+          const rect = target.getBoundingClientRect();
+          let top = rect.bottom + 8;
+          let left = rect.left + (rect.width / 2);
+          
+          // Ajustes de limite de tela
+          if (top + tooltip.offsetHeight > window.innerHeight) {
+             top = rect.top - tooltip.offsetHeight - 8;
+          }
+          
+          tooltip.style.left = left + "px";
+          tooltip.style.top = top + "px";
+        });
+
+        document.addEventListener("mouseout", (e) => {
+          const target = e.target.closest("[data-tooltip], [aria-label]");
+          if (target && target === tooltipTarget) {
+            tooltip.classList.remove("visible");
+            tooltipTarget = null;
+          }
+        });
+
+        document.addEventListener("click", () => tooltip.classList.remove("visible"));
+        window.addEventListener("scroll", () => tooltip.classList.remove("visible"), { passive: true, capture: true });
+      }
+
+      // ------------------------------------------------------------------------
+      // 17. BOOTSTRAP DA APLICAÇÃO
+      // ------------------------------------------------------------------------
+      // Sincronização de Scroll
+      let isSyncingBible = false;
+      let isSyncingNotes = false;
+      let syncBibleTimeout = null;
+      let syncNotesTimeout = null;
+
+      function initBidirectionalScroll() {
+        const bibleReader = document.getElementById("bible-reader");
+        const notesFeed = document.getElementById("mobile-notes-feed");
+        
+        if (!bibleReader || !notesFeed) return;
+        
+        const syncToggle = document.getElementById('sync-scroll-toggle');
+        
+        bibleReader.addEventListener('scroll', () => {
+          if (window.innerWidth < 768) return; 
+          if (!elNotesSidebar || !elNotesSidebar.classList.contains("open")) return;
+          if (notesFeed.style.display === "none") return;
+          if (syncToggle && !syncToggle.checked) return;
+          
+          if (isSyncingNotes) return; // Trava contra loop infinito
+          
+          isSyncingBible = true;
+          
+          const maxBibleScroll = bibleReader.scrollHeight - bibleReader.clientHeight;
+          const maxNotesScroll = notesFeed.scrollHeight - notesFeed.clientHeight;
+          
+          if (maxBibleScroll <= 0 || maxNotesScroll <= 0) return;
+          
+          const percentage = bibleReader.scrollTop / maxBibleScroll;
+          notesFeed.scrollTop = percentage * maxNotesScroll;
+          
+          clearTimeout(syncBibleTimeout);
+          syncBibleTimeout = setTimeout(() => {
+            isSyncingBible = false;
+          }, 50);
+        }, { passive: true });
+        
+        notesFeed.addEventListener('scroll', () => {
+          if (window.innerWidth < 768) return;
+          if (!elNotesSidebar || !elNotesSidebar.classList.contains("open")) return;
+          if (notesFeed.style.display === "none") return;
+          if (syncToggle && !syncToggle.checked) return;
+          
+          if (isSyncingBible) return; // Trava contra loop infinito
+          
+          isSyncingNotes = true;
+          
+          const maxBibleScroll = bibleReader.scrollHeight - bibleReader.clientHeight;
+          const maxNotesScroll = notesFeed.scrollHeight - notesFeed.clientHeight;
+          
+          if (maxBibleScroll <= 0 || maxNotesScroll <= 0) return;
+          
+          const percentage = notesFeed.scrollTop / maxNotesScroll;
+          bibleReader.scrollTop = percentage * maxBibleScroll;
+          
+          clearTimeout(syncNotesTimeout);
+          syncNotesTimeout = setTimeout(() => {
+            isSyncingNotes = false;
+          }, 50);
+        }, { passive: true });
+      }
+
+      function init() {
+        applyTheme(state.theme);
+        applyFontSize(state.fontSize);
+        applyLineHeight(state.lineHeight);
+        applyFontFamily(state.fontFamily);
+        renderSidebarBooks();
+        initEventListeners();
+        initGlobalTooltips();
+        initBidirectionalScroll();
+        renderCurrentChapter();
+      }
+
+      // Inicia quando o DOM estiver pronto
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  

@@ -1053,6 +1053,7 @@
       line-height: var(--line-height-base);
       display: flex;
       gap: 14px;
+      scroll-margin-top: 80px;
       align-items: baseline;
       padding: 4px 8px;
       border-radius: var(--radius-md);
@@ -1568,6 +1569,56 @@
       color: var(--text-primary);
       opacity: 1;
     }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    .switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .sync-toggle-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-right: 4px;
+    }
+    @media (max-width: 640px) {
+      .sync-toggle-label {
+        display: none;
+      }
+    }
     .notes-content {
       flex: 1;
       padding: 44px 12px 14px;
@@ -1624,7 +1675,7 @@
       flex: 1;
       overflow-y: auto;
       padding: 10px;
-      scroll-behavior: smooth;
+      position: relative;
     }
     .mobile-feed-item {
       margin-bottom: 24px;
@@ -1897,6 +1948,39 @@
       }
     }
 
+    /* Mobile Note Drawer Modal */
+    @media (max-width: 768px) {
+      .mobile-note-dialog {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0;
+        width: 100%;
+        max-width: 100%;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        animation: drawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        max-height: 85vh; /* space for keyboard */
+        display: flex;
+        flex-direction: column;
+      }
+      .mobile-note-dialog .modal-body {
+        flex: 1;
+        overflow-y: auto;
+      }
+      @keyframes drawerIn {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
+      .mobile-feed-editor[contenteditable="true"]:empty:before {
+        content: attr(placeholder);
+        color: var(--text-tertiary);
+        pointer-events: none;
+        display: block; /* For Firefox */
+      }
+    }
+
     /* ==========================================================================
        GLOBAL TOOLTIPS
        ========================================================================== */
@@ -2001,6 +2085,15 @@
       </div>
 
       <div class="header-actions">
+        <!-- Toggle Sync Scroll -->
+        <div class="sync-toggle-container" title="Sincronizar Rolagem">
+          <label class="switch">
+            <input type="checkbox" id="sync-scroll-toggle" checked>
+            <span class="slider"></span>
+          </label>
+          <span class="sync-toggle-label">Sync</span>
+        </div>
+        
         <!-- Mantido oculto para compatibilidade com seletores JS existentes -->
         <button class="btn-nav-trigger" id="btn-toggle-sidebar" style="display: none;" aria-label="Abrir seletor de Livro e Capítulo">
           <span id="header-cur-ref">Salmos 23</span>
@@ -2151,6 +2244,21 @@
        ========================================================================== -->
 
   <!-- MODAL: BUSCA INTELIGENTE -->
+
+  <!-- MOBILE NOTE MODAL -->
+  <div class="modal-backdrop" id="modal-note-mobile" role="dialog" aria-modal="true" aria-labelledby="modal-note-title">
+    <div class="modal-dialog mobile-note-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-note-title"></h3>
+        <button class="modal-close-btn" data-close="modal-note-mobile">&times;</button>
+      </div>
+      <div class="modal-body">
+         <div class="mobile-feed-text" id="mobile-note-verse-text" style="font-style: italic; margin-bottom: 16px; color: var(--text-secondary); line-height: 1.5; font-size: 0.95rem;"></div>
+         <div class="mobile-feed-editor" id="mobile-note-editor" contenteditable="false" placeholder="Escreva seu comentário aqui..." style="min-height: 150px; outline: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; background: var(--ui-bg);"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="modal-search" role="dialog" aria-modal="true" aria-labelledby="modal-search-title">
     <div class="modal-dialog">
       <div class="modal-header">
@@ -3212,7 +3320,8 @@
             
             // Evento clique no header
             feedItem.querySelector(".mobile-feed-header").addEventListener("click", () => {
-              const targetVEl = document.getElementById(`v-${chapter}-${vNum}`);
+              const formattedBook = book.toLowerCase().replace(/\s+/g, '-');
+              const targetVEl = document.getElementById(`verse-${formattedBook}-${chapter}-${vNum}`);
               if (targetVEl) {
                 safeScrollTo(targetVEl, true);
                 document.querySelectorAll('.active-note-verse').forEach(el => el.classList.remove('active-note-verse'));
@@ -3283,9 +3392,55 @@
         }
       }
 
+      function openMobileNoteModal(book, chapter, verse, text, key) {
+        openModal("modal-note-mobile");
+        document.getElementById("modal-note-title").textContent = `${book} ${chapter}:${verse}`;
+        document.getElementById("mobile-note-verse-text").textContent = text;
+        
+        const editor = document.getElementById("mobile-note-editor");
+        editor.innerHTML = userNotes[key] || getLocalNote(key) || "";
+        editor.setAttribute("contenteditable", isAdmin ? "true" : "false");
+        
+        // Listeners
+        editor.onblur = (e) => {
+           const noteHtml = editor.innerHTML.trim() === "<br>" ? "" : editor.innerHTML;
+           if (noteHtml !== (userNotes[key] || "")) {
+             saveLocalNote(key, noteHtml);
+             userNotes[key] = noteHtml;
+             if (typeof updateVerseNoteIndicators === 'function') updateVerseNoteIndicators();
+             if (isAdmin && window.firebaseApp && noteHtml) {
+                const { db, doc, setDoc } = window.firebaseApp;
+                setDoc(doc(db, "comments", key), { text: noteHtml, updatedAt: Date.now() });
+             } else if (isAdmin && window.firebaseApp && !noteHtml) {
+                const { db, doc, deleteDoc } = window.firebaseApp;
+                deleteDoc(doc(db, "comments", key));
+             }
+           }
+        };
+        editor.onpaste = (e) => {
+           // Mesma logica de paste
+           const clipboardData = e.clipboardData || window.clipboardData;
+           if (!clipboardData) return;
+           const pastedText = clipboardData.getData("text/plain");
+           if (!pastedText) return;
+           e.preventDefault();
+           if (typeof formatCommentToHtml === 'function') {
+             const formattedHtml = formatCommentToHtml(pastedText);
+             document.execCommand("insertHTML", false, formattedHtml);
+           }
+           editor.blur();
+        };
+      }
+
       function openNotesSidebar(book, chapter, verse, text) {
         currentNoteContext = { book, chapter, verse, text };
         const key = `${book}_${chapter}_${verse}`;
+        
+        // Condicional de tela
+        if (window.innerWidth < 768) {
+           openMobileNoteModal(book, chapter, verse, text, key);
+           return;
+        }
         
         const mobileFeed = document.getElementById("mobile-notes-feed");
         const actionsBox = document.querySelector(".notes-actions");
@@ -3327,15 +3482,18 @@
           if (bottomSentinel) window.notesScrollObserver.observe(bottomSentinel);
         }
         
-        elNotesSidebar.classList.add("open");
-        elNotesSidebar.setAttribute("aria-hidden", "false");
+        if (elNotesSidebar) {
+           elNotesSidebar.classList.add("open");
+           elNotesSidebar.setAttribute("aria-hidden", "false");
+        }
         
         if (window.innerWidth <= 768) {
-          el.sidebarOverlay.classList.add("active");
+          if (el.sidebarOverlay) el.sidebarOverlay.classList.add("active");
         }
         
         document.querySelectorAll('.active-note-verse').forEach(el => el.classList.remove('active-note-verse'));
-        const vEl = document.getElementById(`v-${chapter}-${verse}`) || 
+        const formattedBook = book.toLowerCase().replace(/\s+/g, '-');
+        const vEl = document.getElementById(`verse-${formattedBook}-${chapter}-${verse}`) || 
                      document.querySelector(`.verse-paragraph[data-chapter="${chapter}"][data-verse="${verse}"]`);
         if (vEl) {
           vEl.classList.add("active-note-verse");
@@ -3348,23 +3506,26 @@
             if (target) {
               const container = document.getElementById("mobile-notes-feed");
               if (container) {
-                // Force parent container to not scroll down accidentally
+                // Força o contêiner pai a não rolar
                 const parent = document.querySelector(".notes-content");
                 if (parent) parent.scrollTop = 0;
                 
-                // Disable smooth scroll temporarily
+                // Desativa rolagem suave temporariamente para salto instantâneo
                 const originalBehavior = container.style.scrollBehavior || '';
                 container.style.scrollBehavior = 'auto';
                 
-                // Força layout antes de calcular
-                void container.offsetHeight; 
+                // Calcula a distância usando offsetTop, que é imune a bugs de transição CSS (como scale/transform do sidebar)
+                let current = target;
+                let offsetTop = 0;
+                while (current && current !== container) {
+                   offsetTop += current.offsetTop || 0;
+                   current = current.offsetParent;
+                }
                 
-                // Use built-in scrollIntoView for perfect alignment
-                target.scrollIntoView({ behavior: 'auto', block: 'start' });
+                // Ajusta scrollTop
+                container.scrollTop = Math.max(0, offsetTop - 20);
                 
-                // Ajuste fino para não colar no topo (compensa padding superior)
-                container.scrollTop = Math.max(0, container.scrollTop - 20);
-                
+                // Restaura o comportamento
                 container.style.scrollBehavior = originalBehavior;
               }
               
@@ -3384,11 +3545,13 @@
           document.activeElement.blur();
         }
         document.querySelectorAll('.active-note-verse').forEach(el => el.classList.remove('active-note-verse'));
-        elNotesSidebar.classList.remove("open");
-        elNotesSidebar.setAttribute("aria-hidden", "true");
+        if (elNotesSidebar) {
+           elNotesSidebar.classList.remove("open");
+           elNotesSidebar.setAttribute("aria-hidden", "true");
+        }
         currentNoteContext = null;
-        if (window.innerWidth <= 768 && !el.navSidebar.classList.contains("open")) {
-          el.sidebarOverlay.classList.remove("active");
+        if (window.innerWidth <= 768 && el.sidebar && !el.sidebar.classList.contains("open")) {
+          if (el.sidebarOverlay) el.sidebarOverlay.classList.remove("active");
         }
       }
 
@@ -3937,20 +4100,20 @@
         wrap.style.marginTop = isFirst ? "0" : "2rem";
         wrap.style.borderTop = isFirst ? "none" : "1px solid var(--border)";
 
-        if (!isFirst) {
-          const chTitle = document.createElement("h3");
-          chTitle.className = "reading-chapter-title";
-          chTitle.style.fontSize = "1.5rem";
-          chTitle.style.marginBottom = "2rem";
-          chTitle.textContent = `Capítulo ${chapterNum}`;
-          wrap.appendChild(chTitle);
-        }
+        // Sempre injetar cabeçalho H2 estruturado
+        const chTitle = document.createElement("h2");
+        chTitle.className = "reading-chapter-title";
+        chTitle.style.fontSize = isFirst ? "2rem" : "1.5rem";
+        chTitle.style.marginBottom = "2rem";
+        chTitle.style.fontWeight = "600";
+        chTitle.textContent = `Capítulo ${chapterNum}`;
+        wrap.appendChild(chTitle);
 
         verses.forEach((verseText, index) => {
           const verseNum = index + 1;
           const p = document.createElement("p");
           p.className = "verse-paragraph";
-          p.id = `v-${chapterNum}-${verseNum}`;
+          p.id = `verse-${bookName.toLowerCase().replace(/\s+/g, '-')}-${chapterNum}-${verseNum}`;
           p.dataset.book = bookName;
           p.dataset.verse = verseNum;
           p.dataset.chapter = chapterNum;
@@ -4118,7 +4281,7 @@
             scrollObserver.observe(bottomSentinel);
           }
           
-          if (elNotesSidebar.classList.contains("open")) {
+          if (elNotesSidebar && elNotesSidebar.classList.contains("open")) {
             appendNotesChapterToFeed(bookObj.name, nextChap, false);
           }
         } catch (e) {
@@ -4177,7 +4340,7 @@
           const diff = newScrollHeight - oldScrollHeight;
           scrollContainer.scrollTo({ top: oldScrollTop + diff, behavior: 'instant' });
           
-          if (elNotesSidebar.classList.contains("open")) {
+          if (elNotesSidebar && elNotesSidebar.classList.contains("open")) {
             appendNotesChapterToFeed(bookObj.name, prevChap, true);
           }
         } catch (e) {
@@ -4236,22 +4399,28 @@
 
         // Rolagem suave para versículo alvo caso solicitado
         if (state.targetVerse > 0) {
+          requestAnimationFrame(() => {
           setTimeout(() => {
-            const targetEl = document.getElementById(`v-${state.currentChapter}-${state.targetVerse}`);
+            const formattedBook = state.currentBook.toLowerCase().replace(/\s+/g, '-');
+            const targetEl = document.getElementById(`verse-${formattedBook}-${state.currentChapter}-${state.targetVerse}`);
             if (targetEl) {
-              if (state.openNoteForTarget && window.innerWidth > 768) {
-                const textSpan = targetEl.querySelector(".verse-text");
-                const vText = textSpan ? textSpan.textContent : "";
-                // Abre a aba primeiro
-                openNotesSidebar(state.currentBook, state.currentChapter, state.targetVerse, vText);
+              if (window.innerWidth >= 768) {
+                if (state.openNoteForTarget) {
+                  const textSpan = targetEl.querySelector(".verse-text");
+                  const vText = textSpan ? textSpan.textContent : "";
+                  // Abre a aba no Desktop/Tablet
+                  openNotesSidebar(state.currentBook, state.currentChapter, state.targetVerse, vText);
+                }
                 
-                // Aguarda a animação da aba (que muda a largura do texto) terminar antes de calcular a rolagem
                 setTimeout(() => {
-                   safeScrollTo(targetEl, false);
+                   targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                    targetEl.classList.add("highlight-target");
-                }, 350);
+                }, state.openNoteForTarget ? 350 : 50);
+                
               } else {
-                safeScrollTo(targetEl, false);
+                // No celular, fecha qualquer sidebar que esteja aberta e rola para o topo
+                closeNotesSidebar();
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 targetEl.classList.add("highlight-target");
               }
             }
@@ -4263,6 +4432,7 @@
 
             state.targetVerse = 0;
             setTimeout(updateTopVisibleVerseReference, 350);
+          });
           }, 400);
         } else {
           const scrollContainer = document.getElementById('bible-reader');
@@ -5076,7 +5246,13 @@
 
       function closeModal(modalId) {
         const m = document.getElementById(modalId);
-        if (m) m.classList.remove("active");
+        if (m) {
+          m.classList.remove("active");
+          if (modalId === "modal-note-mobile") {
+             const editor = document.getElementById("mobile-note-editor");
+             if (editor) editor.blur();
+          }
+        }
       }
 
       // ------------------------------------------------------------------------
@@ -5335,6 +5511,69 @@
       // ------------------------------------------------------------------------
       // 17. BOOTSTRAP DA APLICAÇÃO
       // ------------------------------------------------------------------------
+      // Sincronização de Scroll
+      let isSyncingBible = false;
+      let isSyncingNotes = false;
+      let syncBibleTimeout = null;
+      let syncNotesTimeout = null;
+
+      function initBidirectionalScroll() {
+        const bibleReader = document.getElementById("bible-reader");
+        const notesFeed = document.getElementById("mobile-notes-feed");
+        
+        if (!bibleReader || !notesFeed) return;
+        
+        bibleReader.addEventListener('scroll', () => {
+          const syncToggle = document.getElementById('sync-scroll-toggle');
+          if (window.innerWidth < 768) return; 
+          if (!elNotesSidebar || !elNotesSidebar.classList.contains("open")) return;
+          if (notesFeed.style.display === "none") return;
+          if (syncToggle && !syncToggle.checked) return;
+          
+          if (isSyncingNotes) return; // Trava contra loop infinito
+          
+          isSyncingBible = true;
+          
+          const maxBibleScroll = bibleReader.scrollHeight - bibleReader.clientHeight;
+          const maxNotesScroll = notesFeed.scrollHeight - notesFeed.clientHeight;
+          
+          if (maxBibleScroll <= 0 || maxNotesScroll <= 0) return;
+          
+          const percentage = bibleReader.scrollTop / maxBibleScroll;
+          notesFeed.scrollTop = percentage * maxNotesScroll;
+          
+          clearTimeout(syncBibleTimeout);
+          syncBibleTimeout = setTimeout(() => {
+            isSyncingBible = false;
+          }, 50);
+        }, { passive: true });
+        
+        notesFeed.addEventListener('scroll', () => {
+          const syncToggle = document.getElementById('sync-scroll-toggle');
+          if (window.innerWidth < 768) return;
+          if (!elNotesSidebar || !elNotesSidebar.classList.contains("open")) return;
+          if (notesFeed.style.display === "none") return;
+          if (syncToggle && !syncToggle.checked) return;
+          
+          if (isSyncingBible) return; // Trava contra loop infinito
+          
+          isSyncingNotes = true;
+          
+          const maxBibleScroll = bibleReader.scrollHeight - bibleReader.clientHeight;
+          const maxNotesScroll = notesFeed.scrollHeight - notesFeed.clientHeight;
+          
+          if (maxBibleScroll <= 0 || maxNotesScroll <= 0) return;
+          
+          const percentage = notesFeed.scrollTop / maxNotesScroll;
+          bibleReader.scrollTop = percentage * maxBibleScroll;
+          
+          clearTimeout(syncNotesTimeout);
+          syncNotesTimeout = setTimeout(() => {
+            isSyncingNotes = false;
+          }, 50);
+        }, { passive: true });
+      }
+
       function init() {
         applyTheme(state.theme);
         applyFontSize(state.fontSize);
@@ -5343,6 +5582,7 @@
         renderSidebarBooks();
         initEventListeners();
         initGlobalTooltips();
+        initBidirectionalScroll();
         renderCurrentChapter();
       }
 
