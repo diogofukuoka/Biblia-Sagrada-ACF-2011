@@ -3401,11 +3401,7 @@
         currentNoteContext = { book, chapter, verse, text };
         const key = `${book}_${chapter}_${verse}`;
         
-        // Condicional de tela
-        if (window.innerWidth < 768) {
-           openMobileNoteModal(book, chapter, verse, text, key);
-           return;
-        }
+
         
         const mobileFeed = document.getElementById("mobile-notes-feed");
         const actionsBox = document.querySelector(".notes-actions");
@@ -5490,7 +5486,7 @@
         
         bibleReader.addEventListener('scroll', () => {
           const syncToggle = document.getElementById('sync-scroll-toggle');
-          if (window.innerWidth < 768) return; 
+          
           if (!elNotesSidebar || !elNotesSidebar.classList.contains("open")) return;
           if (notesFeed.style.display === "none") return;
           if (syncToggle && !syncToggle.checked) return;
@@ -5515,7 +5511,7 @@
         
         notesFeed.addEventListener('scroll', () => {
           const syncToggle = document.getElementById('sync-scroll-toggle');
-          if (window.innerWidth < 768) return;
+          
           if (!elNotesSidebar || !elNotesSidebar.classList.contains("open")) return;
           if (notesFeed.style.display === "none") return;
           if (syncToggle && !syncToggle.checked) return;
