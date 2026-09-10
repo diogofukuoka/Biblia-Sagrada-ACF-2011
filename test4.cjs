@@ -1,7 +1,10 @@
 const escapeHtml = (str) => str;
 function formatCommentLine(rawLine) {
-        const line = rawLine.trim();
+        let line = rawLine.trim();
         if (!line) return '<div class="note-spacer"><br></div>';
+
+        // Remove marcações Markdown de negrito e itálico para não sujar os regex de formatação visual
+        line = line.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1");
 
         // Cabeçalhos Específicos de Diagramador / Phrasing
         // Usamos ^ para garantir que seja o início da linha e verificamos se a linha não é muito longa (para não apagar um parágrafo inteiro)
@@ -164,5 +167,90 @@ function formatCommentLine(rawLine) {
         return `<div class="note-line">${escapeHtml(line)}</div>`;
       }
 
-      
-console.log(formatCommentLine(`[ [ Modo Negativo / Atitude para com DEUS ] : "sem murmurações" ] → (Indica a ausência de insatisfação providencial)`));
+      function formatCommentToHtml(rawContent) {
+        if (!rawContent) return "";
+        let textToProcess = rawContent;
+        
+        // Se vier HTML, limpa mantendo as quebras lógicas
+        if (rawContent.includes('<div') || rawContent.includes('<p>') || rawContent.includes('<br>')) {
+          const temp = document.createElement("div");
+          // Substitui divs e brs por quebras reais antes de extrair texto
+          let preProcessed = rawContent.replace(/<br\s*\/?>/gi, "\n");
+          preProcessed = preProcessed.replace(/<\/div>/gi, "\n");
+          preProcessed = preProcessed.replace(/<\/p>/gi, "\n");
+          temp.innerHTML = preProcessed;
+          textToProcess = temp.innerText || temp.textContent || "";
+        }
+        
+        // FIX: Se o texto for colado como um único bloco maciço sem quebras de linha (ex: copiado do prompt sem formatação)
+        // Precisamos injetar quebras de linha antes de cada colchete de abertura '[' que indique o início de uma análise,
+        // E antes dos numerais de título como "7- Diagramador" ou "8- Análise"
+        // E injetar quebra depois de ')' no final da análise, ou antes do próximo colchete.
+        
+        // 1. Quebra antes de títulos conhecidos (mesmo que estejam misturados)
+        textToProcess = textToProcess.replace(/([A-Za-z0-9)])\s*(?:\d+-)?\s*(Diagramador B[íi]blico)/gi, "$1\nI. $2");
+        textToProcess = textToProcess.replace(/([A-Za-z0-9)])\s*(?:\d+-)?\s*(An[áa]lise de Fraseamento)/gi, "$1\nII. $2");
+        
+        // Remove numeração indesejada colada em títulos (como 7- Diagramador ou 8- Análise) no inicio da linha
+        textToProcess = textToProcess.replace(/^\s*\d+-\s*(Diagramador B[íi]blico)/gim, "I. $1");
+        textToProcess = textToProcess.replace(/^\s*\d+-\s*(An[áa]lise de Fraseamento)/gim, "II. $1");
+        
+        // 2. Quebra antes de qualquer bloco de colchete que pareça uma análise
+        // Ex: "Congregação.[ declararei ]" -> "Congregação.\n[ declararei ]"
+        textToProcess = textToProcess.replace(/([^\n\[\s])\s*\[\s*([^\[\]]+?)\s*\]\s*(-->|—>|->|→|—|-|:)/g, "$1\n[ $2 ] $3 ");
+        
+        // 3. Quebra depois de parênteses de fechamento que pareçam fim de uma explicação e antes do próximo colchete
+        textToProcess = textToProcess.replace(/\)\s*\[/g, ")\n[");
+        
+        // 4. Quebra antes de textos que começam com aspas no fraseamento
+        // (depois de ponto final, parenteses ou colchete de fechamento, e APENAS se for seguido de uma letra/numero - indicando início de frase)
+        textToProcess = textToProcess.replace(/([.)\]])\s*"(?=[A-Za-z0-9Á-Úá-úÀ-Ùà-ùÂ-Ûâ-ûÃ-Õã-õÇç])/g, "$1\n\"");
+        
+        // Separação de versículo colado no título: VersículosSalmos 22:22
+        textToProcess = textToProcess.replace(/(Analista de Vers[íi]culos)\s*([1-3]?\s*[A-Z][a-zãéíóú]+\s+\d+:\d+(?:-\d+)?)/gi, "$1\n$2\n");
+        const lines = textToProcess.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        let result = [];
+        for (let i = 0; i < lines.length; i++) {
+          const l = lines[i].trim();
+          if (!l) {
+            let prevIsPhrasing = false;
+            for (let j = i - 1; j >= 0; j--) {
+              if (lines[j].trim()) {
+                const prev = lines[j].trim();
+                prevIsPhrasing = /^\s*\[?\s*\[?\s*(.+?)\s*\]?\s*(?:→|->|—>|-->|→|—|-)\s*(.+)$/.test(prev) || 
+                                 /^([^(]+?)\s*(\(.+?\))\.?$/.test(prev) ||
+                                 /^([^:]+?):\s*".+"\s*$/.test(prev) ||
+                                 /an[áa]lise de fraseamento/i.test(prev) || 
+                                 /r[óo]tulos sem[âa]nticos/i.test(prev);
+                break;
+              }
+            }
+            let nextIsPhrasing = false;
+            for (let j = i + 1; j < lines.length; j++) {
+              if (lines[j].trim()) {
+                const next = lines[j].trim();
+                nextIsPhrasing = /^\s*\[?\s*\[?\s*(.+?)\s*\]?\s*(?:→|->|—>|-->|→|—|-)\s*(.+)$/.test(next) ||
+                                 /^([^(]+?)\s*(\(.+?\))\.?$/.test(next) ||
+                                 /^([^:]+?):\s*".+"\s*$/.test(next);
+                break;
+              }
+            }
+            if (prevIsPhrasing && nextIsPhrasing) {
+              continue; // Remove linha em branco entre blocos de fraseamento
+            }
+          }
+          result.push(formatCommentLine(l));
+        }
+        return result.join("");
+      }
+const inputs = [
+  "[ *Aquele que tem* ] → **A Apropriação Pessoal da Palavra**",
+  "[ *e os guarda,* ] → **A Evidência Prática** (Obediência Contínua)",
+  "[ *Aquele que tem os MEUS mandamentos* ] → **Cláusula Condicional Implícita / Sujeito Definido por Posse Espiritual** (Recepção cognitiva da verdade revelada)"
+];
+
+for (const input of inputs) {
+  console.log("----");
+  console.log("IN:", input);
+  console.log("OUT:", formatCommentToHtml(input).replace(/<\/div>/g, "\n"));
+}

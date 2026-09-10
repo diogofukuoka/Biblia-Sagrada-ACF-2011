@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<div id="editor" contenteditable="true" style="min-height:100px; border:1px solid black;"></div>
+<script>
+const editor = document.getElementById('editor');
+editor.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text/plain");
+    console.log("pasted", pastedText);
+    document.execCommand("insertHTML", false, "<b>" + pastedText + "</b>");
+});
+</script>
+</body>
+</html>

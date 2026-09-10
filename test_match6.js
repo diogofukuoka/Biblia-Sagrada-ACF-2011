@@ -2,9 +2,8 @@ const fs = require('fs');
 let code = fs.readFileSync('index.html', 'utf8');
 
 const scriptMatch = code.match(/function formatCommentLine\(rawLine\) \{[\s\S]*?function formatCommentToHtml\(rawContent\) \{[\s\S]*?return result\.join\(""\);\s*\}/);
-let funcs = scriptMatch[0];
-
-funcs = `const escapeHtml = (str) => {
+let functions = scriptMatch[0];
+functions = `const escapeHtml = (str) => {
   return (str || "").replace(/[&<>"']/g, function (m) {
     switch (m) {
       case '&': return '&amp;';
@@ -15,9 +14,9 @@ funcs = `const escapeHtml = (str) => {
       default: return m;
     }
   });
-};\n` + funcs;
+};\n` + functions;
 
-fs.writeFileSync('test_funcs_out.cjs', funcs + `
+fs.writeFileSync('test_funcs6.js', functions + `
 const input = \`"Mas para mim," → Contraste / Identificação: Isola o autor da multidão perversa citada no contexto anterior.
 "bom é aproximar-me de Deus;" → Declaração de Valor: Estabelece a tese central (a premissa teológica) do versículo.
 [ "pus a minha confiança no Senhor DEUS," → Meio / Agência: Demonstra como a aproximação se materializa na prática, que é pelo exercício da fé ] → (refúgio)

@@ -1,47 +1,27 @@
 const fs = require('fs');
+let code = fs.readFileSync('index.html', 'utf8');
 
-const data = [{
-    "livro": "gn",
-    "capitulo": 1,
-    "versiculos": [
-      "1 No princípio criou Deus o céu e a terra.",
-      "2 E a terra era sem forma e vazia;"
-    ]
-}, {
-    "livro": "gn",
-    "capitulo": 2,
-    "versiculos": [
-      "1 Assim os céus, a terra e todo o seu exército foram acabados."
-    ]
-}, {
-    "livro": "ex",
-    "capitulo": 1,
-    "versiculos": [
-      "1 Estes pois são os nomes dos filhos de Israel"
-    ]
-}];
+const scriptMatch = code.match(/function formatCommentLine\(rawLine\) \{[\s\S]*?function formatCommentToHtml\(rawContent\) \{[\s\S]*?return result\.join\(""\);\s*\}/);
+let funcs = scriptMatch[0];
 
-let normalized = [];
-const bookMap = {}; // { 'gn': { abbrev: 'gn', name: 'Gênesis', chapters: [] } }
-
-for (const entry of data) {
-    if (entry.livro && entry.capitulo && entry.versiculos) {
-        const abbrev = entry.livro;
-        if (!bookMap[abbrev]) {
-            bookMap[abbrev] = { abbrev: abbrev, chapters: [] };
-            normalized.push(bookMap[abbrev]);
-        }
-        
-        // Ensure chapter array is large enough
-        const capIdx = entry.capitulo - 1;
-        while (bookMap[abbrev].chapters.length <= capIdx) {
-            bookMap[abbrev].chapters.push([]);
-        }
-        
-        // Remove verse numbers at start of each verse
-        const cleanVerses = entry.versiculos.map(v => v.replace(/^\\d+\\s+/, ''));
-        bookMap[abbrev].chapters[capIdx] = cleanVerses;
+funcs = `const escapeHtml = (str) => {
+  return (str || "").replace(/[&<>"']/g, function (m) {
+    switch (m) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#039;';
+      default: return m;
     }
-}
+  });
+};\n` + funcs;
 
-console.log(JSON.stringify(normalized, null, 2));
+fs.writeFileSync('test_funcs_out.js', funcs + `
+const input = \`"Mas para mim," → Contraste / Identificação: Isola o autor da multidão perversa citada no contexto anterior.
+"bom é aproximar-me de Deus;" → Declaração de Valor: Estabelece a tese central (a premissa teológica) do versículo.
+[ "pus a minha confiança no Senhor DEUS," → Meio / Agência: Demonstra como a aproximação se materializa na prática, que é pelo exercício da fé ] → (refúgio)
+"para anunciar todas as Tuas obras." → Propósito / Resultado: Apresenta a finalidade evangelística e doxológica da confiança prévia.\`;
+
+console.log(formatCommentToHtml(input).replace(/<\\/div>/g, "</div>\\n"));
+`);
